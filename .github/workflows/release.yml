@@ -59,3 +59,47 @@ jobs:
           files: |
             release/*.dmg
             release/*.zip
+
+  # Metadatos de seguridad sobre los artefactos ya publicados (draft): un
+  # checksum y una procedencia firmada que un tercero puede verificar sin
+  # tener que confiar ciegamente en el autor. No reconstruye nada; opera
+  # sobre los binarios que build-linux/build-macos ya subieron.
+  finalize:
+    needs: [build-linux, build-macos]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # descargar/subir assets del release (draft)
+      id-token: write # firmar la attestation (Sigstore/OIDC)
+      attestations: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      REPO: ${{ github.repository }}
+      TAG: ${{ github.ref_name }}
+    steps:
+      - name: Descargar los artefactos ya publicados
+        run: gh release download "$TAG" --repo "$REPO" --dir dl
+
+      - name: Generar SHA256SUMS
+        run: |
+          (cd dl && sha256sum -- * > ../SHA256SUMS)
+          cat SHA256SUMS
+
+      - name: Generar SBOM (SPDX, dependency graph nativo de GitHub)
+        run: |
+          version="${TAG#v}"
+          gh api "repos/${REPO}/dependency-graph/sbom" --jq '.sbom' \
+            > "msgeater-${version}.spdx.json"
+
+      # Prueba criptográfica (Sigstore) de que estos archivos concretos
+      # salieron de este workflow, en este repo, en este commit. Verificable
+      # con: gh attestation verify <archivo> --repo oscarhenriquezg/msgeater
+      - name: Firmar procedencia (GitHub Artifact Attestations)
+        uses: actions/attest-build-provenance@8beda2b7ed98355c0e97c0a63bec38ae472e66c4 # v4
+        with:
+          subject-path: dl/*
+
+      - name: Adjuntar SHA256SUMS y SBOM al release
+        run: |
+          version="${TAG#v}"
+          gh release upload "$TAG" --repo "$REPO" \
+            SHA256SUMS "msgeater-${version}.spdx.json"

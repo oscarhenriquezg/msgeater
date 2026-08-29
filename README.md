@@ -128,9 +128,16 @@ bash -c "$(curl -fsSL https://raw.githubusercontent.com/oscarhenriquezg/msgeater
 > `sudo dnf install fuse fuse-libs`) o ejecuta con
 > `~/.local/bin/MsgEater.AppImage --appimage-extract-and-run`.
 
-### Descarga manual
+### Descarga manual (y verificable)
 
-Descarga desde [Releases](https://github.com/oscarhenriquezg/msgeater/releases):
+La instalación rápida de arriba prioriza comodidad. Si prefieres comprobar
+tú mismo que el binario corresponde exactamente al código de este repo antes
+de ejecutarlo, descarga manualmente desde
+[Releases](https://github.com/oscarhenriquezg/msgeater/releases) — cada
+release incluye `SHA256SUMS` y una
+[GitHub Artifact Attestation](https://docs.github.com/actions/security-guides/using-artifact-attestations-to-establish-provenance-for-builds)
+firmada (Sigstore) por artefacto. Los pasos completos, con comandos para
+Linux y macOS, están en **[docs/VERIFY-RELEASE.md](docs/VERIFY-RELEASE.md)**.
 
 **Linux** — AppImage (recomendado, cualquier distro con glibc ≥ 2.35), `.deb` o `.rpm`:
 
@@ -154,8 +161,41 @@ chmod +x "MsgEater-x.y.z-x86_64.AppImage"
 >   xattr -dr com.apple.quarantine "/Applications/MsgEater.app"
 >   ```
 >
-> Esto no compromete la seguridad: el código es abierto y la app funciona 100%
-> offline. La firma se añadirá si en el futuro se costea la cuenta de Apple.
+> Esto **no es inofensivo por definición**: `xattr -dr com.apple.quarantine`
+> desactiva parte del flujo normal de Gatekeeper para esa app, y solo tiene
+> sentido como workaround mientras no exista firma/notarización real. El
+> código es abierto y auditable, y puedes verificar el binario con los pasos
+> de arriba antes de aplicarlo — pero la afirmación correcta es esa, no que
+> "no compromete la seguridad". Se retirará esta indicación en cuanto haya
+> firma y notarización (ver [Security & Trust](#security--trust)).
+
+## Security & Trust
+
+> La seguridad debe poder verificarse, no darse por sentada.
+
+MsgEater está pensada para abrir correos potencialmente hostiles, así que la
+cadena que va del código fuente al binario que ejecutas está pensada para
+que un tercero pueda comprobarla — no para que confíes en la palabra del
+autor:
+
+| Control | Qué aporta |
+| --- | --- |
+| **Código abierto (GPL-3.0)** | Todo el código, incluido el de build y CI, es auditable |
+| **100% offline, sin telemetría** | Bloqueo de red a nivel de sesión (NFR-03), cubierto por test e2e |
+| **CI en cada commit** | Lint, typecheck, tests unitarios y e2e, `npm audit` de producción |
+| **[CodeQL](https://github.com/oscarhenriquezg/msgeater/security/code-scanning)** | Análisis estático (SAST) oficial de GitHub sobre el código TS/JS |
+| **Dependabot + Dependency Review** | Dependencias vigiladas tanto ya instaladas como al agregar una nueva en un PR |
+| **[OpenSSF Scorecard](https://scorecard.dev/viewer/?uri=github.com/oscarhenriquezg/msgeater)** | Evaluación independiente de prácticas de seguridad del repositorio |
+| **SHA-256 (`SHA256SUMS`)** | Cada release permite comprobar que el archivo descargado es *byte a byte* el publicado |
+| **SBOM (SPDX)** | Inventario firmado de qué depende cada release, con versiones |
+| **GitHub Artifact Attestations** | Prueba criptográfica (Sigstore) de que el binario salió de este repo y este commit — no de un tercero |
+
+Ninguno de estos controles por separado — ni siquiera todos juntos —
+significa "100% seguro"; cada uno demuestra algo puntual y verificable. El
+detalle de qué prueba cada uno está en
+**[docs/VERIFY-RELEASE.md](docs/VERIFY-RELEASE.md)**, y el modelo de
+protección en tiempo de ejecución (sandbox, sanitización, bloqueo de red)
+está en **[SECURITY.md](SECURITY.md)**.
 
 ## Limitaciones conocidas (por diseño)
 

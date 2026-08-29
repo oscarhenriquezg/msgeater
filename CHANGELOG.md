@@ -2,6 +2,30 @@
 
 Todos los cambios notables de este proyecto se documentan en este archivo.
 
+## [0.4.3] - 2026-08-29
+
+### Añadido
+
+- Cada release incluye ahora `SHA256SUMS` y una
+  [GitHub Artifact Attestation](https://docs.github.com/actions/security-guides/using-artifact-attestations-to-establish-provenance-for-builds)
+  (Sigstore) por artefacto, más un SBOM en formato SPDX generado desde el
+  dependency graph nativo de GitHub. `docs/VERIFY-RELEASE.md` documenta cómo
+  comprobarlos. README: nueva sección "Security & Trust".
+- CI: análisis estático con CodeQL, Dependency Review en PRs y evaluación
+  independiente con OpenSSF Scorecard.
+
+### Corregido
+
+- CI llevaba roto varios commits: `npm audit --omit=dev --audit-level=high`
+  bloqueaba todo el job por vulnerabilidades HIGH reales en dependencias de
+  producción (`nodemailer` vía `mailparser`, `undici` vía `jsdom`). Se
+  actualizaron ambas dependencias.
+- Carrera en el test e2e de seguridad más importante del proyecto ("sin
+  ejecución de scripts en el iframe"), que fallaba de forma consistente al
+  capturar el iframe a mitad de su navegación interna a `about:srcdoc`.
+- `SECURITY.md`: la tabla de versiones soportadas seguía en "0.2.x".
+- GitHub Actions de terceros fijadas por commit SHA en vez de por tag mutable.
+
 ## [0.4.2] - 2026-08-28
 
 ### Corregido

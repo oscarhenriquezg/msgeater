@@ -1,6 +1,6 @@
 {
   "name": "msgeater",
-  "version": "0.4.1",
+  "version": "0.4.2",
   "description": "Visor multiplataforma de archivos .msg de Outlook",
   "scripts": {
     "test": "vitest run",

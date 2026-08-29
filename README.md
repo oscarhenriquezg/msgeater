@@ -1,5 +1,9 @@
 # MsgEater
 
+<p align="center">
+  <img src="assets/icon-source/png/MsgEater-256x256.png" alt="Icono de MsgEater" width="128" />
+</p>
+
 Visor de escritorio ligero y multiplataforma (**Linux y macOS**) para archivos
 `.msg` de Microsoft Outlook. Funciona **100% offline**: el contenido del correo
 nunca abandona tu equipo.

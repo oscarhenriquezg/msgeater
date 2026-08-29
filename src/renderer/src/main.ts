@@ -1054,6 +1054,7 @@ async function init(): Promise<void> {
   appInfo = await api.getAppInfo();
   document.title = t('app.title');
 
+  $('drop-zone-icon').innerHTML = `<img src="${iconAbout}" alt="" />`;
   $('welcome-title').textContent = t('welcome.title');
   $('welcome-hint').textContent = t('welcome.hint');
   $('welcome-or').textContent = t('welcome.or');

@@ -1,0 +1,43 @@
+# OpenSSF Scorecard: evaluación independiente de prácticas de seguridad del
+# repo (no un análisis del código en sí). Resultados en Security > Code
+# scanning y publicados en https://scorecard.dev (badge en el README).
+name: OpenSSF Scorecard
+
+on:
+  push:
+    branches: [main]
+  schedule:
+    # Cadencia recomendada por el proyecto Scorecard: prácticas del repo
+    # cambian poco de un día a otro.
+    - cron: '23 4 * * 2'
+
+permissions: read-all
+
+jobs:
+  analyze:
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: write # subir resultados SARIF a code scanning
+      id-token: write # firmar los resultados publicados (Sigstore/OIDC)
+      contents: read
+
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+
+      - uses: ossf/scorecard-action@55891bbd73f2425e97637d96e306fc9d491d0b21 # v2.4.4
+        with:
+          results_file: results.sarif
+          results_format: sarif
+          publish_results: true
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: SARIF file
+          path: results.sarif
+          retention-days: 5
+
+      - uses: github/codeql-action/upload-sarif@5ba2889ada762081db2c4f32a729827dce632c7b # v3
+        with:
+          sarif_file: results.sarif

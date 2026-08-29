@@ -1,0 +1,42 @@
+# Análisis estático oficial de GitHub (SAST) para JavaScript/TypeScript.
+# Resultados visibles en la pestaña Security > Code scanning del repo.
+name: CodeQL
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    # Cobertura periódica ante nuevas queries/reglas de CodeQL, aunque no
+    # haya cambios de código.
+    - cron: '17 3 * * 1'
+
+permissions:
+  contents: read
+
+jobs:
+  analyze:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write # subir resultados SARIF a code scanning
+      actions: read # requerido por el initializer en repos privados
+
+    strategy:
+      fail-fast: false
+      matrix:
+        language: ['javascript-typescript']
+
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: github/codeql-action/init@5ba2889ada762081db2c4f32a729827dce632c7b # v3
+        with:
+          languages: ${{ matrix.language }}
+          # Cubre más categorías (p. ej. calidad además de seguridad) sin
+          # disparar el análisis "extended", más lento; suficiente para el
+          # tamaño de este proyecto.
+          queries: security-and-quality
+      - uses: github/codeql-action/analyze@5ba2889ada762081db2c4f32a729827dce632c7b # v3
+        with:
+          category: '/language:${{ matrix.language }}'

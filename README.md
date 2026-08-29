@@ -1,6 +1,14 @@
 # MsgEater
 
 <p align="center">
+  <a href="https://github.com/oscarhenriquezg/msgeater/actions/workflows/ci.yml"><img src="https://github.com/oscarhenriquezg/msgeater/actions/workflows/ci.yml/badge.svg" alt="CI" /></a>
+  <a href="https://github.com/oscarhenriquezg/msgeater/actions/workflows/codeql.yml"><img src="https://github.com/oscarhenriquezg/msgeater/actions/workflows/codeql.yml/badge.svg" alt="CodeQL" /></a>
+  <a href="https://scorecard.dev/viewer/?uri=github.com/oscarhenriquezg/msgeater"><img src="https://api.securityscorecards.dev/projects/github.com/oscarhenriquezg/msgeater/badge" alt="OpenSSF Scorecard" /></a>
+  <a href="https://github.com/oscarhenriquezg/msgeater/releases/latest"><img src="https://img.shields.io/github/v/release/oscarhenriquezg/msgeater" alt="Latest release" /></a>
+  <a href="LICENSE.md"><img src="https://img.shields.io/github/license/oscarhenriquezg/msgeater" alt="License" /></a>
+</p>
+
+<p align="center">
   <img src="assets/icon-source/png/MsgEater-256x256.png" alt="Icono de MsgEater" width="128" />
 </p>
 

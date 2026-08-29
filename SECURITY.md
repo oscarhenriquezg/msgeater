@@ -7,12 +7,12 @@ de vulnerabilidad son bienvenidos y se tratan con prioridad.
 
 ## Versiones soportadas
 
-Solo la última versión publicada recibe correcciones de seguridad.
-
-| Versión | Soporte            |
-| ------- | ------------------ |
-| 0.2.x   | ✅ Sí              |
-| < 0.2   | ❌ No              |
+Solo se da soporte de seguridad a la **última versión publicada** en
+[Releases](https://github.com/oscarhenriquezg/msgeater/releases/latest).
+Versiones anteriores no reciben parches: al ser software gratuito de un solo
+mantenedor, no es sostenible mantener varias ramas en paralelo. Actualiza a
+la última versión antes de reportar, si es posible — puede que el problema ya
+esté corregido.
 
 ## Cómo reportar una vulnerabilidad
 

@@ -4,6 +4,7 @@
   <a href="https://github.com/oscarhenriquezg/msgeater/actions/workflows/ci.yml"><img src="https://github.com/oscarhenriquezg/msgeater/actions/workflows/ci.yml/badge.svg" alt="CI" /></a>
   <a href="https://github.com/oscarhenriquezg/msgeater/actions/workflows/codeql.yml"><img src="https://github.com/oscarhenriquezg/msgeater/actions/workflows/codeql.yml/badge.svg" alt="CodeQL" /></a>
   <a href="https://scorecard.dev/viewer/?uri=github.com/oscarhenriquezg/msgeater"><img src="https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fapi.scorecard.dev%2Fprojects%2Fgithub.com%2Foscarhenriquezg%2Fmsgeater&label=openssf%20scorecard&query=%24.score&suffix=%2F10" alt="OpenSSF Scorecard" /></a>
+  <a href="https://www.bestpractices.dev/projects/14357"><img src="https://www.bestpractices.dev/projects/14357/badge" alt="OpenSSF Best Practices" /></a>
   <a href="https://github.com/oscarhenriquezg/msgeater/releases/latest"><img src="https://img.shields.io/github/v/release/oscarhenriquezg/msgeater" alt="Latest release" /></a>
   <a href="LICENSE.md"><img src="https://img.shields.io/github/license/oscarhenriquezg/msgeater" alt="License" /></a>
 </p>
@@ -190,6 +191,7 @@ autor:
 | **[CodeQL](https://github.com/oscarhenriquezg/msgeater/security/code-scanning)** | Análisis estático (SAST) oficial de GitHub sobre el código TS/JS |
 | **Dependabot + Dependency Review** | Dependencias vigiladas tanto ya instaladas como al agregar una nueva en un PR |
 | **[OpenSSF Scorecard](https://scorecard.dev/viewer/?uri=github.com/oscarhenriquezg/msgeater)** | Evaluación independiente de prácticas de seguridad del repositorio |
+| **[OpenSSF Best Practices](https://www.bestpractices.dev/projects/14357)** | Badge *passing*: cumple el conjunto de buenas prácticas de desarrollo de la OpenSSF (proceso, pruebas, reporte de vulnerabilidades, documentación) |
 | **SHA-256 (`SHA256SUMS`)** | Cada release permite comprobar que el archivo descargado es *byte a byte* el publicado |
 | **SBOM (SPDX)** | Inventario firmado de qué depende cada release, con versiones |
 | **GitHub Artifact Attestations** | Prueba criptográfica (Sigstore) de que el binario salió de este repo y este commit — no de un tercero |

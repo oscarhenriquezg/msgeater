@@ -263,15 +263,26 @@ function createAppWindow(isMain: boolean): BrowserWindow {
       contextIsolation: true,
       nodeIntegration: false,
       // Probado sandbox:true (ambos preloads solo usan la API de `electron`,
-      // sin Node): rompió el preload en 33/34 e2e (probablemente el sandbox
-      // de Chromium a nivel de SO exige namespaces de kernel no disponibles
-      // en el contenedor de CI usado para probarlo, no necesariamente una
-      // incompatibilidad real en un Linux/macOS de escritorio normal). Se
-      // mantiene desactivado hasta poder validarlo en un entorno sin esa
-      // restricción.
+      // sin Node, en principio compatible con el preload sandboxeado):
+      // cuelga el renderer también en un escritorio real (Linux Mint), no
+      // solo en el contenedor de CI como se pensaba. Causa raíz encontrada:
+      // el driver de Electron de Playwright siempre lanza con --no-sandbox
+      // a nivel de proceso; combinado con --enable-sandbox (que dispara
+      // este webPreference por ventana) quedan ambos flags contradictorios
+      // presentes a la vez, lo que cuelga el renderer. No hay forma de que
+      // el propio arnés de e2e valide sandbox:true tal como está armado
+      // (Playwright no permite omitir su --no-sandbox). Para probarlo de
+      // verdad haría falta lanzar la app empaquetada a mano, fuera de
+      // Playwright -- pendiente, no bloquea nada mientras tanto.
       sandbox: false
     }
   });
+  // Defensa en profundidad: la app nunca usa window.open()/target=_blank a
+  // propósito (los enlaces del correo pasan por confirmLeave + shell.openExternal
+  // con allowlist de protocolo). Denegarlo aquí también cierra la vía por
+  // defecto de Electron (crear una BrowserWindow sin restricciones) ante
+  // cualquier regresión futura, sin depender solo del sandbox del iframe.
+  win.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
 
   win.once('ready-to-show', () => win.show());
   // En algunos compositores Wayland ready-to-show no llega a dispararse;
@@ -649,6 +660,7 @@ function registerIpc(): void {
         sandbox: false // ver nota junto a la ventana principal
       }
     });
+    win.webContents.setWindowOpenHandler(() => ({ action: 'deny' })); // ver nota junto a la ventana principal
     sourceDocs.set(win.webContents.id, {
       headers,
       body,

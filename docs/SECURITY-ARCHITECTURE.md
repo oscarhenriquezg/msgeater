@@ -79,6 +79,81 @@ tanto: `contextIsolation: true` + `nodeIntegration: false` + preload mínimo
 siguen activos, y el único contenido no confiable (el cuerpo del correo)
 vive además detrás del sandbox del iframe (TB6), independiente de este.
 
+## Decisiones evaluadas y no aplicadas (por ahora)
+
+### Firma GPG de los paquetes Linux
+
+Se evaluó firmar `.deb`/`.rpm`/`AppImage` con GPG además de los controles ya
+activos (SHA256SUMS + GitHub Artifact Attestations). **No aporta valor real
+adicional en este escenario concreto:**
+
+- La Attestation ya prueba —criptográficamente, vía Sigstore/OIDC, sin que el
+  mantenedor tenga que custodiar ninguna clave privada— que el artefacto
+  salió de este repo, este commit y este workflow. Una firma GPG probaría lo
+  mismo que ya prueba la Attestation, pero exige generar, publicar y rotar
+  una clave privada a mano: más superficie de gestión (¿dónde vive la clave?
+  ¿qué pasa si se filtra?) para la misma garantía.
+- Los gestores de paquetes de las distros (`apt`/`dnf`/`zypper`) solo piden
+  firma GPG si el paquete se distribuye vía un **repositorio APT/RPM propio**
+  (`add-apt-repository`, `.repo` file). MsgEater no tiene uno: se distribuye
+  como descarga directa desde GitHub Releases e instalado con `dpkg -i`/
+  `rpm -i`, donde GPG no interviene en el flujo de instalación real.
+- Si en el futuro se publica un repositorio APT/RPM propio, ahí sí GPG pasa a
+  ser necesario (no opcional) porque es el mecanismo que esos gestores
+  esperan — se reevaluará en ese momento, no antes.
+
+### Reproducible builds
+
+Se investigaron las fuentes de variabilidad de un build con
+`electron-vite`/`electron-builder` para evaluar si prometer *builds
+reproducibles* (que cualquiera pueda recompilar el código y obtener
+bytes idénticos a los publicados) es viable a corto plazo. Honestamente, no
+lo es todavía, por varias fuentes de no-determinismo reales:
+
+- El binario de Electron descargado (`node_modules/electron`) no está fijado
+  por hash, solo por versión semver del `package.json`.
+- `asar: false` (necesario aquí porque el worker de parsing usa el loader
+  ESM de Node, que no puede leer dentro de `.asar`) evita una fuente de
+  variabilidad, pero el propio empaquetado de `electron-builder` (orden de
+  archivos, metadatos de timestamps en `.dmg`/`.AppImage`) no está pensado
+  para determinismo bit a bit.
+- El build de macOS depende de herramientas del sistema operativo del
+  runner (`hdiutil` para el `.dmg`) cuyo output no es necesariamente estable
+  entre versiones de macOS.
+
+**No se afirma reproducibilidad porque no sería cierto.** La garantía real
+hoy es la cadena SHA256 + SBOM + Attestation: no prueba que *cualquiera*
+pueda reconstruir el binario byte a byte, pero sí prueba de forma verificable
+que el binario publicado salió de este código, en este commit, por este
+workflow — que es la propiedad que de verdad importa para confiar en un
+release sin confiar ciegamente en el autor.
+
+### Estrategia incremental de fuzzing
+
+El corpus adversarial actual (`scripts/make-fixtures.mjs`) ya cubre: CFBF
+truncado, bytes aleatorios, cabecera ZIP falsa, archivo vacío, solo-cabecera,
+nombre de adjunto con path traversal, RTF encapsulado/plano, ANSI/cirílico
+(codepage no-UTF8), S/MIME cifrado y calendario no soportado. Gaps
+identificados, en orden de prioridad para una próxima iteración:
+
+1. **Mensajes anidados adversariales** — un `.msg` que se adjunta a sí mismo
+   o se anida más allá de `MAX_EMBEDDED_DEPTH`, para confirmar que el límite
+   corta la recursión en vez de solo evitarla por casualidad en los fixtures
+   actuales (ninguno anida hoy).
+2. **MIME anidado/multipart malformado** — `multipart/mixed` con boundaries
+   rotos o anidados sin cierre, más allá del `plaintext-only`/`html-basic`
+   actuales.
+3. **Charsets inválidos o no declarados** — más allá de `ansi-cyrillic`
+   (codepage válido pero no-UTF8): un `charset=` que no existe, o ausente
+   donde se esperaba.
+4. **Tamaños absurdos / decompression-bomb-ish** — un RTF o CFBF cuyo
+   contenido descomprimido sea desproporcionado respecto a su tamaño en
+   disco, para confirmar que no hay un límite de recursos ausente entre el
+   parser y el worker thread.
+
+No se implementa en esta pasada (no era obligatorio per el alcance original),
+pero queda como lista concreta y accionable para cuando se retome.
+
 ## Qué queda fuera de este documento
 
 - El proceso de build/release (checksums, SBOM, procedencia firmada): ver

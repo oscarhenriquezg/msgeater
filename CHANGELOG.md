@@ -2,6 +2,32 @@
 
 Todos los cambios notables de este proyecto se documentan en este archivo.
 
+## [0.4.4] - 2026-08-29
+
+### Añadido
+
+- Cada release incluye ahora también `msgeater-x.y.z.sigstore.json`: el
+  bundle de procedencia (mismo contenido que la Artifact Attestation) como
+  archivo descargable, para quien prefiera verificarlo sin depender de la
+  API de GitHub. Necesario además porque OpenSSF Scorecard solo reconoce
+  procedencia firmada si existe como asset del release con ese sufijo — no
+  consulta la API de attestations.
+- `main` protegida: PRs obligatorios, checks requeridos (test, CodeQL,
+  dependency-review) antes de mergear, sin force-push ni borrado de rama.
+
+### Cambiado
+
+- `release.yml`: `contents: write` ya no es un permiso de todo el workflow,
+  se declara solo en los jobs que de verdad suben assets (mejora el check
+  Token-Permissions de OpenSSF Scorecard sin cambiar el comportamiento).
+- `esbuild` (dependencia de desarrollo, anidada bajo vite) forzado a
+  `^0.28.1` vía `overrides` -- corrige un aviso LOW (GHSA-g7r4-m6w7-qqqr,
+  solo explotable en el dev-server de Vite en Windows).
+- 3 GitHub Actions (`codeql-action`, `attest-build-provenance`,
+  `scorecard-action`) tenían el commit SHA mal resuelto (apuntaban al
+  objeto *tag* anotado, no al *commit*); corregido tras un fallo real
+  detectado en el publish de OpenSSF Scorecard.
+
 ## [0.4.3] - 2026-08-29
 
 ### Añadido

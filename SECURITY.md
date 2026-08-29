@@ -1,5 +1,9 @@
 # Política de seguridad
 
+<p align="center">
+  <b>Español</b> · <a href="SECURITY.en.md">English</a>
+</p>
+
 MsgEater es un visor de correo **100 % offline** cuyo objetivo es abrir
 archivos `.msg`/`.eml`/`.emlx` —que pueden ser hostiles— sin poner en riesgo al
 usuario. La seguridad es parte del propósito del proyecto, así que los informes

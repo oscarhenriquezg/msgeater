@@ -1,0 +1,103 @@
+# Escanea los instalables ya publicados de un release con VirusTotal (~70
+# motores antivirus) como SEÑAL ADICIONAL -- no una certificación de
+# seguridad ni garantía de ausencia de malware. Opera solo sobre binarios
+# públicos ya publicados en GitHub Releases; nunca sube archivos .msg de
+# usuarios, fixtures ni contenido privado.
+name: VirusTotal scan
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag del release a escanear (ej. v0.4.4)'
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      GH_TOKEN: ${{ github.token }}
+      REPO: ${{ github.repository }}
+      TAG: ${{ github.event.release.tag_name || inputs.tag }}
+      VT_API_KEY: ${{ secrets.VIRUSTOTAL_API_KEY }}
+    steps:
+      - name: Descargar los instalables del release (sin checksums/SBOM/attestation)
+        run: |
+          mkdir dl
+          gh release download "$TAG" --repo "$REPO" --dir dl \
+            -p '*.AppImage' -p '*.deb' -p '*.rpm' -p '*.dmg' -p '*.zip'
+          ls -la dl
+
+      - name: Escanear cada artefacto en VirusTotal
+        run: |
+          version="${TAG#v}"
+          summary="virustotal-${version}.md"
+          {
+            echo "### VirusTotal — MsgEater ${TAG}"
+            echo
+            echo "Señal adicional de un tercero, no una certificación de seguridad."
+            echo "Ver [SECURITY.md](https://github.com/${REPO}/blob/main/SECURITY.md)."
+            echo
+            echo "| Archivo | SHA-256 | Detecciones | Informe |"
+            echo "|---|---|---|---|"
+          } > "$summary"
+
+          for f in dl/*; do
+            name=$(basename "$f")
+            sha=$(sha256sum "$f" | awk '{print $1}')
+            echo "== ${name} (${sha}) =="
+
+            # ¿VirusTotal ya tiene un análisis para este hash exacto? Evita
+            # subir de nuevo un archivo ya conocido (ahorra cuota y tiempo).
+            code=$(curl -s -o /tmp/report.json -w '%{http_code}' \
+              -H "x-apikey: ${VT_API_KEY}" \
+              "https://www.virustotal.com/api/v3/files/${sha}")
+
+            stats_json=""
+            if [ "$code" = "200" ]; then
+              stats_json=$(jq -c '.data.attributes.last_analysis_stats' /tmp/report.json)
+            else
+              echo "Sin reporte previo; subiendo ${name}…"
+              upload_url=$(curl -s -H "x-apikey: ${VT_API_KEY}" \
+                "https://www.virustotal.com/api/v3/files/upload_url" | jq -r '.data')
+              analysis_id=$(curl -s -H "x-apikey: ${VT_API_KEY}" \
+                -F "file=@${f}" "${upload_url}" | jq -r '.data.id')
+
+              status=""
+              for i in $(seq 1 20); do
+                sleep 20
+                resp=$(curl -s -H "x-apikey: ${VT_API_KEY}" \
+                  "https://www.virustotal.com/api/v3/analyses/${analysis_id}")
+                status=$(echo "$resp" | jq -r '.data.attributes.status')
+                if [ "$status" = "completed" ]; then
+                  stats_json=$(echo "$resp" | jq -c '.data.attributes.stats')
+                  break
+                fi
+              done
+            fi
+
+            if [ -z "$stats_json" ]; then
+              echo "::warning::${name}: el análisis no terminó a tiempo (60 min); se omite del resumen"
+              echo "| ${name} | \`${sha}\` | timeout | — |" >> "$summary"
+              continue
+            fi
+
+            malicious=$(echo "$stats_json" | jq -r '.malicious')
+            suspicious=$(echo "$stats_json" | jq -r '.suspicious')
+            total=$(echo "$stats_json" | jq -r '[.[]] | add')
+            echo "| ${name} | \`${sha}\` | ${malicious} malicious / ${suspicious} suspicious de ${total} motores | [ver informe](https://www.virustotal.com/gui/file/${sha}) |" >> "$summary"
+          done
+
+          cat "$summary" >> "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: virustotal-report
+          path: virustotal-*.md
+          retention-days: 90

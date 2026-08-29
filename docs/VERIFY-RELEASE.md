@@ -68,13 +68,29 @@ attestation de los pasos 2 y 3 siguen siendo válidos para un `.dmg`/`.zip`
 sin firmar; simplemente no sustituyen la verificación que haría Gatekeeper
 sobre una app firmada.
 
+## 5. Consultar el escaneo de VirusTotal (opcional, señal adicional)
+
+Cada release publicado dispara un escaneo automático de los 5 instalables
+(~70 motores antivirus vía [VirusTotal](https://www.virustotal.com/)). El
+resultado queda en el resumen del run de GitHub Actions correspondiente:
+pestaña **Actions** → workflow **VirusTotal scan** → el run del tag que te
+interesa → "Summary".
+
+Esto es una **señal adicional**, no una certificación: un resultado limpio
+no prueba ausencia de malware (los motores pueden fallar en detectar algo
+nuevo), y un falso positivo ocasional en apps Electron no firmadas no es
+inusual. Reportamos el número de motores que marcaron algo (p. ej. "0
+malicious / 0 suspicious de 71 motores") junto al enlace al informe
+completo — nunca frases como "certificado" o "libre de virus".
+
 ## Qué demuestra esto (y qué no)
 
 | Verificación | Qué prueba | Qué **no** prueba |
 | --- | --- | --- |
 | `SHA256SUMS` | El archivo que tienes es *byte a byte* el que se publicó en el release | Que ese contenido esté libre de errores o vulnerabilidades |
 | Artifact Attestation | El archivo salió del workflow de GitHub Actions de este repo, en un commit identificable — no de un tercero | Que el código de ese commit sea seguro; solo prueba origen, no ausencia de fallos |
-| Ninguna de las dos | — | Que la app sea "100% segura": eso no lo demuestra ningún control individual |
+| VirusTotal | ~70 motores antivirus no marcaron el archivo en el momento del escaneo | Que sea imposible que algún motor falle en detectar algo nuevo; no es una certificación |
+| Ninguna de las anteriores | — | Que la app sea "100% segura": eso no lo demuestra ningún control individual |
 
 Para el detalle de qué protecciones tiene la app en tiempo de ejecución
 (sandbox del iframe, sanitización HTML, bloqueo de red, etc.), ver

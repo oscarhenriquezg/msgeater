@@ -63,12 +63,17 @@ test('correo hostil: sin ejecución de scripts en el iframe (criterio 2, FR-08)'
   await launch(join(FIXTURES, 'hostile-script.msg'));
   await expect(page.locator('#subject')).toHaveText('XSS attempt');
 
+  // El contenido visible sí se muestra (degradación con gracia). Se espera
+  // primero a que el iframe termine de navegar (srcdoc pasa por about:blank
+  // antes del contenido real); si no, `page.frame()` puede devolver un
+  // handle que Chromium invalida un instante después ("Execution context
+  // was destroyed") y el test sale flaky.
+  await expect(page.frameLocator('#body-frame').locator('p')).toContainText('Hola');
+
   const frame = page.frame({ url: /about:srcdoc/ }) ?? page.mainFrame().childFrames()[0];
   expect(frame).toBeTruthy();
   const pwned = await frame!.evaluate(() => (window as { PWNED?: boolean }).PWNED);
   expect(pwned).toBeUndefined();
-  // El contenido visible sí se muestra (degradación con gracia).
-  await expect(page.frameLocator('#body-frame').locator('p')).toContainText('Hola');
 });
 
 test('imagen inline cid: renderizada como data: URI (FR-09)', async () => {

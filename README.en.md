@@ -4,6 +4,7 @@
   <a href="https://github.com/oscarhenriquezg/msgeater/actions/workflows/ci.yml"><img src="https://github.com/oscarhenriquezg/msgeater/actions/workflows/ci.yml/badge.svg" alt="CI" /></a>
   <a href="https://github.com/oscarhenriquezg/msgeater/actions/workflows/codeql.yml"><img src="https://github.com/oscarhenriquezg/msgeater/actions/workflows/codeql.yml/badge.svg" alt="CodeQL" /></a>
   <a href="https://scorecard.dev/viewer/?uri=github.com/oscarhenriquezg/msgeater"><img src="https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fapi.scorecard.dev%2Fprojects%2Fgithub.com%2Foscarhenriquezg%2Fmsgeater&label=openssf%20scorecard&query=%24.score&suffix=%2F10" alt="OpenSSF Scorecard" /></a>
+  <a href="https://www.bestpractices.dev/projects/14357"><img src="https://www.bestpractices.dev/projects/14357/badge" alt="OpenSSF Best Practices" /></a>
   <a href="https://github.com/oscarhenriquezg/msgeater/releases/latest"><img src="https://img.shields.io/github/v/release/oscarhenriquezg/msgeater" alt="Latest release" /></a>
   <a href="LICENSE.md"><img src="https://img.shields.io/github/license/oscarhenriquezg/msgeater" alt="License" /></a>
 </p>
@@ -192,6 +193,7 @@ you take the author's word for it:
 | **[CodeQL](https://github.com/oscarhenriquezg/msgeater/security/code-scanning)** | GitHub's official static analysis (SAST) over the TS/JS code |
 | **Dependabot + Dependency Review** | Dependencies watched both once installed and when a PR adds a new one |
 | **[OpenSSF Scorecard](https://scorecard.dev/viewer/?uri=github.com/oscarhenriquezg/msgeater)** | Independent assessment of the repository's security practices |
+| **[OpenSSF Best Practices](https://www.bestpractices.dev/projects/14357)** | *Passing* badge: meets the OpenSSF set of good development practices (process, testing, vulnerability reporting, documentation) |
 | **SHA-256 (`SHA256SUMS`)** | Every release lets you check the downloaded file is *byte for byte* the published one |
 | **SBOM (SPDX)** | Signed inventory of what each release depends on, with versions |
 | **GitHub Artifact Attestations** | Cryptographic proof (Sigstore) that the binary came from this repo and this commit — not from a third party |

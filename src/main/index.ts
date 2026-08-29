@@ -14,6 +14,7 @@ import type {
 } from '@shared/types';
 import { MAX_PNG_HEIGHT } from '@shared/types';
 import { isExecutableAttachment } from '@shared/executable';
+import { sanitizeAttachmentName } from '@shared/attachment-name';
 import {
   exportEml,
   exportPdf,
@@ -145,7 +146,7 @@ async function exportToPath(
 
 // Tests E2E: userData propio para no colisionar con una instancia en uso
 // (el lock de instancia única vive en userData).
-const customUserData = process.env['MSG_VIEWER_USER_DATA'];
+const customUserData = process.env['MSGEATER_USER_DATA'];
 if (customUserData) app.setPath('userData', customUserData);
 
 // Evita el diálogo "Choose password for new keyring" en Linux (GNOME Keyring/
@@ -261,7 +262,14 @@ function createAppWindow(isMain: boolean): BrowserWindow {
       preload: join(import.meta.dirname, '../preload/index.mjs'),
       contextIsolation: true,
       nodeIntegration: false,
-      sandbox: false // el preload necesita webUtils; el renderer sigue aislado
+      // Probado sandbox:true (ambos preloads solo usan la API de `electron`,
+      // sin Node): rompió el preload en 33/34 e2e (probablemente el sandbox
+      // de Chromium a nivel de SO exige namespaces de kernel no disponibles
+      // en el contenedor de CI usado para probarlo, no necesariamente una
+      // incompatibilidad real en un Linux/macOS de escritorio normal). Se
+      // mantiene desactivado hasta poder validarlo en un entorno sin esa
+      // restricción.
+      sandbox: false
     }
   });
 
@@ -270,7 +278,7 @@ function createAppWindow(isMain: boolean): BrowserWindow {
   // sin este fallback la ventana existiría pero nunca se mostraría.
   setTimeout(() => {
     if (!win.isDestroyed() && !win.isVisible()) {
-      console.warn('[msg-viewer] ready-to-show no llegó; mostrando ventana por fallback');
+      console.warn('[msgeater] ready-to-show no llegó; mostrando ventana por fallback');
       win.show();
     }
   }, 1200);
@@ -294,7 +302,7 @@ function createAppWindow(isMain: boolean): BrowserWindow {
   win.webContents.on('did-fail-load', (_e, code, desc, url, isMainFrame) => {
     if (!isMainFrame) return;
     failures++;
-    console.warn(`[msg-viewer] did-fail-load code=${code} ${desc} url=${url}`);
+    console.warn(`[msgeater] did-fail-load code=${code} ${desc} url=${url}`);
     if (win.isDestroyed()) return;
     if (failures === 1) {
       setTimeout(() => {
@@ -303,7 +311,7 @@ function createAppWindow(isMain: boolean): BrowserWindow {
     } else if (failures === 2 && process.env['ELECTRON_RENDERER_URL']) {
       // Dev server caído (p. ej. proceso huérfano): mejor la build local
       // que una ventana en blanco.
-      console.warn('[msg-viewer] dev server inaccesible; usando build local');
+      console.warn('[msgeater] dev server inaccesible; usando build local');
       void win.loadFile(join(import.meta.dirname, '../renderer/index.html'));
     }
   });
@@ -353,7 +361,7 @@ async function openDocument(filePath: string, win: BrowserWindow): Promise<LoadR
       win.webContents.send('document-loaded', failed);
       return failed;
     }
-    win.setTitle(`${basename(filePath)} — MSG Viewer`);
+    win.setTitle(`${basename(filePath)} — MsgEater`);
     addRecent(filePath);
     refreshMenu();
   }
@@ -440,7 +448,7 @@ function registerIpc(): void {
     const data = await getAnyAttachment(state.buffer, attachmentId);
     if (!data) return;
     try {
-      const dir = await mkdtemp(join(app.getPath('temp'), 'msg-viewer-drag-'));
+      const dir = await mkdtemp(join(app.getPath('temp'), 'msgeater-drag-'));
       tempDirs.add(dir);
       const filePath = join(dir, basename(data.fileName) || 'adjunto');
       await writeFile(filePath, data.content);
@@ -485,7 +493,7 @@ function registerIpc(): void {
         if (targets.length === 1) {
           const target = targets[0]!;
           const { canceled, filePath } = await dialog.showSaveDialog(win, {
-            defaultPath: target.fileName
+            defaultPath: sanitizeAttachmentName(target.fileName)
           });
           if (canceled || !filePath) return { ok: false, reason: 'cancelled' };
           const data = await getAnyAttachment(state.buffer, target.id);
@@ -505,7 +513,7 @@ function registerIpc(): void {
         for (const target of targets) {
           const data = await getAnyAttachment(state.buffer, target.id);
           if (!data) continue;
-          const path = join(dir, uniqueName(target.fileName, saved));
+          const path = join(dir, uniqueName(sanitizeAttachmentName(target.fileName), saved));
           await writeFile(path, data.content);
           saved.push(path);
         }
@@ -586,7 +594,7 @@ function registerIpc(): void {
   ipcMain.handle('clear-document', (e) => {
     docs.delete(e.sender.id);
     const win = BrowserWindow.fromWebContents(e.sender);
-    win?.setTitle('MSG Viewer');
+    win?.setTitle('MsgEater');
     setExportEnabled(false);
   });
 
@@ -638,7 +646,7 @@ function registerIpc(): void {
         preload: join(import.meta.dirname, '../preload/source.mjs'),
         contextIsolation: true,
         nodeIntegration: false,
-        sandbox: false
+        sandbox: false // ver nota junto a la ventana principal
       }
     });
     sourceDocs.set(win.webContents.id, {
@@ -718,8 +726,8 @@ function registerIpc(): void {
     const win = BrowserWindow.fromWebContents(e.sender);
     if (win !== mainWindow) return { offer: false };
     // Hooks de prueba: forzar u omitir el ofrecimiento de forma determinista.
-    if (process.env['MSG_VIEWER_FORCE_ASSOC_PROMPT']) return { offer: true };
-    if (process.env['MSG_VIEWER_NO_ASSOC_PROMPT'] || isAssocPromptDismissed()) {
+    if (process.env['MSGEATER_FORCE_ASSOC_PROMPT']) return { offer: true };
+    if (process.env['MSGEATER_NO_ASSOC_PROMPT'] || isAssocPromptDismissed()) {
       return { offer: false };
     }
     return { offer: !(await fileTypesAssociated()) };
@@ -817,7 +825,7 @@ async function openEmbedded(senderWcId: number, attachmentId: number): Promise<L
     buffer: Buffer.from(inner.content),
     embeddedDepth: parent.embeddedDepth + 1
   });
-  win.setTitle(`${meta.fileName} — MSG Viewer`);
+  win.setTitle(`${meta.fileName} — MsgEater`);
   // La ventana nueva recoge su documento vía get-current-document al iniciar.
   return result;
 }
@@ -843,7 +851,7 @@ async function openAttachmentInTemp(
     return;
   }
   try {
-    const dir = await mkdtemp(join(app.getPath('temp'), 'msg-viewer-'));
+    const dir = await mkdtemp(join(app.getPath('temp'), 'msgeater-'));
     tempDirs.add(dir);
     const safeName = basename(data.fileName) || 'adjunto';
     const filePath = join(dir, safeName);
@@ -868,7 +876,7 @@ async function saveSingleAttachment(
     if (!(await confirmExecutableAction(win, `"${meta.fileName}"`, 'save'))) return;
   }
   const { canceled, filePath } = await dialog.showSaveDialog(win, {
-    defaultPath: meta.fileName
+    defaultPath: sanitizeAttachmentName(meta.fileName)
   });
   if (canceled || !filePath) return;
   const data = await getAnyAttachment(state.buffer, attachmentId);

@@ -1,6 +1,7 @@
 import { createWriteStream } from 'node:fs';
 import { ZipArchive } from 'archiver';
 import type { ExportResult, MsgDocument } from '@shared/types';
+import { sanitizeAttachmentName } from '@shared/attachment-name';
 import { getAnyAttachment } from '../parser/AnyMessage';
 import { sanitizeEmailHtml } from '../parser/sanitize';
 import { documentToText } from './textout';
@@ -67,7 +68,7 @@ export async function exportMht(
   const parts: string[] = [];
 
   parts.push(
-    `From: <Saved by MSG Viewer>`,
+    `From: <Saved by MsgEater>`,
     `Subject: ${doc.metadata.subject}`,
     'MIME-Version: 1.0',
     `Content-Type: multipart/related; boundary="${boundary}"`,
@@ -146,7 +147,7 @@ export async function exportZip(
         if (att.isInline) continue;
         const data = await getAnyAttachment(sourceBuffer, att.id);
         if (!data) continue;
-        let name = data.fileName || `adjunto-${att.id}`;
+        let name = sanitizeAttachmentName(data.fileName || `adjunto-${att.id}`);
         while (used.has(name.toLowerCase())) name = `_${name}`;
         used.add(name.toLowerCase());
         archive.append(Buffer.from(data.content), { name: `attachments/${name}` });

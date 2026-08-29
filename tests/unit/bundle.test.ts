@@ -52,4 +52,16 @@ describe('exportaciones de archivo (JSON / MHT / ZIP)', () => {
     expect(asText).toContain('metadata.json');
     expect(asText).toContain('attachments/informe.pdf');
   });
+
+  it('exportZip sanea nombres de adjunto maliciosos (zip slip)', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'zip-slip-'));
+    const out = join(dir, 'm.zip');
+    const doc = await docOf('path-traversal.msg');
+    const r = await exportZip(doc, load('path-traversal.msg'), out, true, '<html></html>');
+    expect(r.ok).toBe(true);
+    const asText = readFileSync(out).toString('latin1');
+    expect(asText).not.toContain('../');
+    expect(asText).not.toContain('..\\');
+    expect(asText).toContain('attachments/escaped.txt');
+  });
 });

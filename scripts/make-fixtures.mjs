@@ -146,6 +146,19 @@ writeFileSync(join(outDir, 'html-basic.msg'), buildMsg({
   ]
 }));
 
+// Nombre de adjunto malicioso (path traversal / zip slip): "Guardar todos" y
+// "Exportar ZIP" deben confinar la escritura al directorio/carpeta destino.
+writeFileSync(join(outDir, 'path-traversal.msg'), buildMsg({
+  subject: 'Adjunto con nombre malicioso',
+  senderName: 'Mallory',
+  senderEmail: 'mallory@evil.example',
+  bodyText: 'Adjunto con path traversal en el nombre.',
+  attachments: [
+    { fileName: 'informe.pdf', extension: '.pdf', content: Buffer.from('%PDF-1.4 fake fixture') },
+    { fileName: '../../escaped.txt', extension: '.txt', content: Buffer.from('pwned') }
+  ]
+}));
+
 writeFileSync(join(outDir, 'ansi-cyrillic.msg'), buildAnsiMsg({
   subject: 'Привет, отчёт',
   bodyText: 'Текст письма в кодировке Windows-1251.',

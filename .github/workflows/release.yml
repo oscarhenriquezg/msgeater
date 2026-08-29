@@ -98,12 +98,25 @@ jobs:
       # salieron de este workflow, en este repo, en este commit. Verificable
       # con: gh attestation verify <archivo> --repo oscarhenriquezg/msgeater
       - name: Firmar procedencia (GitHub Artifact Attestations)
+        id: attest
         uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4
         with:
           subject-path: dl/*
 
-      - name: Adjuntar SHA256SUMS y SBOM al release
+      # El bundle ya generado arriba (mismo contenido, mismo commit) se
+      # adjunta también como asset del release: la verificación real vive en
+      # la API de attestations de GitHub (paso anterior), esto es solo para
+      # que quien audite el release sin usar `gh attestation verify` tenga
+      # el archivo a mano. Sufijo .sigstore.json (no .intoto.jsonl): es
+      # exactamente lo que contiene -- un bundle Sigstore, no un in-toto
+      # JSONL plano -- aunque OpenSSF Scorecard reconoce ambos por igual.
+      - name: Copiar el bundle de procedencia con nombre de release
+        run: |
+          version="${TAG#v}"
+          cp "${{ steps.attest.outputs.bundle-path }}" "msgeater-${version}.sigstore.json"
+
+      - name: Adjuntar SHA256SUMS, SBOM y bundle de procedencia al release
         run: |
           version="${TAG#v}"
           gh release upload "$TAG" --repo "$REPO" \
-            SHA256SUMS "msgeater-${version}.spdx.json"
+            SHA256SUMS "msgeater-${version}.spdx.json" "msgeater-${version}.sigstore.json"

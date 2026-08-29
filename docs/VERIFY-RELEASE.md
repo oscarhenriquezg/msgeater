@@ -52,6 +52,13 @@ gh attestation verify MsgEater-x.y.z-x86_64.AppImage --repo oscarhenriquezg/msge
 exitosa confirma repositorio, commit y workflow de origen — no requiere estar
 autenticado en `gh` para artefactos de un repo público.
 
+El release también incluye `msgeater-x.y.z.sigstore.json`: el mismo bundle
+de procedencia como archivo descargable, para quien prefiera inspeccionarlo
+sin depender de la API de GitHub (por ejemplo con
+[`cosign verify-blob-attestation`](https://docs.sigstore.dev/cosign/verifying/verify/)
+o cualquier herramienta compatible con bundles Sigstore). El comando
+`gh attestation verify` de arriba sigue siendo la forma más simple.
+
 ## 4. Firma / notarización (macOS)
 
 MsgEater **no está firmada con un certificado Developer ID de Apple ni

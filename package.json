@@ -44,8 +44,8 @@
     "archiver": "^8.0.0",
     "dompurify": "^3.4.10",
     "iconv-lite": "^0.7.2",
-    "jsdom": "^29.1.1",
-    "mailparser": "^3.9.9",
+    "jsdom": "^30.0.1",
+    "mailparser": "^3.9.17",
     "rtf-stream-parser": "^3.8.1"
   },
   "main": "out/main/index.js",

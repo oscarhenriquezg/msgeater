@@ -52,12 +52,29 @@ gh attestation verify MsgEater-x.y.z-x86_64.AppImage --repo oscarhenriquezg/msge
 exitosa confirma repositorio, commit y workflow de origen — no requiere estar
 autenticado en `gh` para artefactos de un repo público.
 
-El release también incluye `msgeater-x.y.z.sigstore.json`: el mismo bundle
-de procedencia como archivo descargable, para quien prefiera inspeccionarlo
-sin depender de la API de GitHub (por ejemplo con
-[`cosign verify-blob-attestation`](https://docs.sigstore.dev/cosign/verifying/verify/)
-o cualquier herramienta compatible con bundles Sigstore). El comando
-`gh attestation verify` de arriba sigue siendo la forma más simple.
+El release también incluye la misma procedencia como archivo descargable, en
+los dos formatos habituales del ecosistema, para quien prefiera inspeccionarla
+sin depender de la API de GitHub:
+
+- **`msgeater-x.y.z.sigstore.json`** — el bundle Sigstore completo (firma,
+  cadena de confianza y envelope). Es lo que consumen `cosign` y las
+  herramientas del ecosistema Sigstore, p. ej.
+  [`cosign verify-blob-attestation`](https://docs.sigstore.dev/cosign/verifying/verify/).
+- **`msgeater-x.y.z.intoto.jsonl`** — solo el DSSE envelope, el formato
+  [in-toto](https://in-toto.io/) estándar de attestations (el mismo que emite
+  el generador SLSA). Su payload es un in-toto Statement v1 con predicado
+  [SLSA Provenance v1](https://slsa.dev/provenance/v1) que cubre los 5
+  instalables.
+
+No son firmas distintas: los dos salen del mismo material firmado una sola
+vez. Para inspeccionar el contenido del segundo sin herramientas extra:
+
+```bash
+jq -r '.payload' msgeater-x.y.z.intoto.jsonl | base64 -d | jq .
+```
+
+El comando `gh attestation verify` de arriba sigue siendo la forma más simple
+de *verificar* (no solo inspeccionar).
 
 ## 4. Firma / notarización (macOS)
 

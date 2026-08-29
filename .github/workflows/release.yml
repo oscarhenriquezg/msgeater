@@ -107,16 +107,27 @@ jobs:
       # adjunta también como asset del release: la verificación real vive en
       # la API de attestations de GitHub (paso anterior), esto es solo para
       # que quien audite el release sin usar `gh attestation verify` tenga
-      # el archivo a mano. Sufijo .sigstore.json (no .intoto.jsonl): es
-      # exactamente lo que contiene -- un bundle Sigstore, no un in-toto
-      # JSONL plano -- aunque OpenSSF Scorecard reconoce ambos por igual.
+      # el archivo a mano. Se publican los dos formatos del MISMO material:
+      #  - .sigstore.json : el bundle Sigstore completo (firma + cadena de
+      #    confianza + el envelope). Es lo que consumen cosign y las
+      #    herramientas del ecosistema Sigstore.
+      #  - .intoto.jsonl  : solo el DSSE envelope, una línea JSON, que es el
+      #    formato in-toto estándar de attestations (el mismo que emite el
+      #    generador SLSA). No es un archivo distinto ni una firma extra:
+      #    se extrae del bundle anterior con jq.
       - name: Copiar el bundle de procedencia con nombre de release
         run: |
           version="${TAG#v}"
-          cp "${{ steps.attest.outputs.bundle-path }}" "msgeater-${version}.sigstore.json"
+          bundle="${{ steps.attest.outputs.bundle-path }}"
+          cp "$bundle" "msgeater-${version}.sigstore.json"
+          # -c: una attestation por línea, que es lo que significa la "l" de jsonl.
+          jq -c '.dsseEnvelope' "$bundle" > "msgeater-${version}.intoto.jsonl"
 
       - name: Adjuntar SHA256SUMS, SBOM y bundle de procedencia al release
         run: |
           version="${TAG#v}"
           gh release upload "$TAG" --repo "$REPO" \
-            SHA256SUMS "msgeater-${version}.spdx.json" "msgeater-${version}.sigstore.json"
+            SHA256SUMS \
+            "msgeater-${version}.spdx.json" \
+            "msgeater-${version}.sigstore.json" \
+            "msgeater-${version}.intoto.jsonl"

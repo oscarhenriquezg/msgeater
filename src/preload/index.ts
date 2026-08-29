@@ -3,15 +3,15 @@ import type {
   AttachmentSaveRequest,
   ExportRequest,
   LoadResult,
-  MsgViewerApi
+  MsgEaterApi
 } from '@shared/types';
 
 /**
  * Única superficie expuesta al renderer (§7.3): contextBridge con el
- * contrato tipado MsgViewerApi. Sin acceso a Node en el renderer.
+ * contrato tipado MsgEaterApi. Sin acceso a Node en el renderer.
  */
 
-const api: MsgViewerApi & { openDroppedFile(file: File): Promise<LoadResult> } = {
+const api: MsgEaterApi & { openDroppedFile(file: File): Promise<LoadResult> } = {
   openFileDialog: () => ipcRenderer.invoke('dialog:open'),
   openPath: (path) => ipcRenderer.invoke('open-path', path),
   openEmbedded: (attachmentId) => ipcRenderer.invoke('open-embedded', attachmentId),
@@ -49,4 +49,4 @@ const api: MsgViewerApi & { openDroppedFile(file: File): Promise<LoadResult> } =
   }
 };
 
-contextBridge.exposeInMainWorld('msgViewer', api);
+contextBridge.exposeInMainWorld('msgEater', api);

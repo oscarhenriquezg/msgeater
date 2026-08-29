@@ -137,6 +137,7 @@ h1 {
 .toolbar .spacer { flex: 1 1 auto; }
 .iconbtn { padding: 6px 8px; line-height: 0; }
 .toolbar svg { width: 17px; height: 17px; stroke-width: 2; vertical-align: middle; }
+.toolbar img.brand-icon { width: 18px; height: 18px; vertical-align: middle; }
 .exportbtn {
   display: inline-flex;
   align-items: center;
@@ -373,7 +374,7 @@ dialog p { font-size: 13.5px; }
 .about-dialog h3 { margin: 4px 0 2px; font-size: 18px; }
 #about-icon { cursor: pointer; user-select: none; transition: transform 0.15s; }
 #about-icon:hover { transform: scale(1.06) rotate(-3deg); }
-#about-icon svg { width: 72px; height: 72px; }
+#about-icon svg, #about-icon img { width: 72px; height: 72px; }
 #about-version { margin-bottom: 12px; }
 #about-detail { white-space: pre-line; line-height: 1.5; }
 .about-egg {

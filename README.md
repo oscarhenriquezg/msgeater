@@ -1,12 +1,46 @@
-# MSG Viewer
+# MsgEater
 
 Visor de escritorio ligero y multiplataforma (**Linux y macOS**) para archivos
 `.msg` de Microsoft Outlook. Funciona **100% offline**: el contenido del correo
 nunca abandona tu equipo.
 
-> En macOS y Linux no hay forma nativa de abrir un `.msg` recibido desde un
-> entorno corporativo Windows/Outlook sin instalar Outlook o subir el archivo
-> a un servicio web de terceros. MSG Viewer cubre ese vacío.
+![Ventana principal de MsgEater mostrando un correo y el menú de exportación](assets/screenshots/main-window.png)
+
+## Motivación
+
+En macOS y Linux no hay forma nativa de abrir un `.msg` recibido desde un
+entorno corporativo Windows/Outlook. El escenario es habitual: un ticket de
+soporte, un correo reenviado por un compañero, un adjunto en un sistema de
+gestión de trabajo… y ahí está, un `.msg` que tu sistema no sabe abrir.
+
+Las alternativas existentes no resuelven bien el problema:
+
+- **Instalar Outlook** no es una opción en Linux, y en macOS implica una
+  suscripción a Microsoft 365 solo para leer un archivo suelto.
+- Los **visores de escritorio** que sí existen suelen romper el formato del
+  mensaje (pierden el HTML original, muestran cabeceras a medias), no
+  muestran los adjuntos correctamente o son proyectos abandonados/inseguros
+  que ejecutan el contenido del correo sin sanitizar.
+- Los **conversores y visores online** son, quizás, lo peor de todo: subes un
+  correo (a veces confidencial, con datos de clientes o de la empresa) a un
+  servidor de terceros del que no sabes nada. ¿Qué hacen con el contenido?
+  ¿Cuánto tiempo lo guardan? Las direcciones de correo que extraen
+  probablemente terminan alimentando bases de datos de spam, los adjuntos
+  quedan expuestos a poder ser copiados o filtrados, y el cuerpo del
+  mensaje —que puede contener información sensible— pasa a estar al alcance
+  de quien sea que opere ese servicio. A esto se suma que subir un correo
+  corporativo a una herramienta no autorizada suele violar directamente las
+  políticas de manejo de datos de la empresa, y que muchos de estos sitios
+  se sostienen con publicidad agresiva o directamente son una fachada para
+  instalar otro software: el "visor gratis" es, en realidad, el producto que
+  monetiza tu correo.
+
+MsgEater nace del hartazgo con todo esto: la desconfianza hacia un formato
+cerrado y propietario como `.msg`, y la falta de una alternativa decente,
+abierta y segura para leerlo sin ceder el control de esos datos a nadie. De
+ahí también el nombre y el icono: un Tux que se come los `.msg` para
+digerirlos —parsearlos, sanitizarlos— y mostrarlos sin que salgan de tu
+equipo.
 
 ## Características
 
@@ -68,30 +102,30 @@ nunca abandona tu equipo.
 Funciona en **Linux y macOS**; el script detecta el sistema y descarga el artefacto adecuado. Sin permisos de root:
 
 ```bash
-bash -c "$(curl -fsSL https://raw.githubusercontent.com/oscarhenriquezg/msgview/main/scripts/install.sh)"
+bash -c "$(curl -fsSL https://raw.githubusercontent.com/oscarhenriquezg/msgeater/main/scripts/install.sh)"
 ```
 
 - **Linux** — deja el AppImage en `~/.local/bin` y crea la entrada en el menú de aplicaciones.
-- **macOS** — instala `MSG Viewer.app` en `~/Applications` y le quita la cuarentena de Gatekeeper (la app no está firmada).
+- **macOS** — instala `MsgEater.app` en `~/Applications` y le quita la cuarentena de Gatekeeper (la app no está firmada).
 
 > En Linux los AppImage requieren **FUSE2** (`libfuse2`). Si al arrancar ves un
 > error de FUSE, instálalo (`sudo apt install libfuse2` / `sudo dnf install fuse
-> fuse-libs`) o ejecuta con `~/.local/bin/MSGViewer.AppImage --appimage-extract-and-run`.
+> fuse-libs`) o ejecuta con `~/.local/bin/MsgEater.AppImage --appimage-extract-and-run`.
 
 ### Descarga manual
 
-Descarga desde [Releases](https://github.com/oscarhenriquezg/msgview/releases):
+Descarga desde [Releases](https://github.com/oscarhenriquezg/msgeater/releases):
 
 **Linux** — AppImage (recomendado, cualquier distro con glibc ≥ 2.35), `.deb` o `.rpm`:
 
 ```bash
-chmod +x "MSG Viewer-x.y.z-x86_64.AppImage"
-./"MSG Viewer-x.y.z-x86_64.AppImage" correo.msg
+chmod +x "MsgEater-x.y.z-x86_64.AppImage"
+./"MsgEater-x.y.z-x86_64.AppImage" correo.msg
 ```
 
 **macOS** — monta el `.dmg` y arrastra la app a Aplicaciones (macOS 12+, binario universal).
 
-> **App sin firmar:** MSG Viewer es gratuita (GPL) y no está firmada ni
+> **App sin firmar:** MsgEater es gratuita (GPL) y no está firmada ni
 > notarizada por Apple (el Developer Program cuesta 99 USD/año). macOS la
 > bloqueará la primera vez con un aviso de desarrollador no identificado. Para
 > abrirla:
@@ -101,7 +135,7 @@ chmod +x "MSG Viewer-x.y.z-x86_64.AppImage"
 > - **Opción B (Terminal):** quita el atributo de cuarentena y ábrela normal:
 >
 >   ```bash
->   xattr -dr com.apple.quarantine "/Applications/MSG Viewer.app"
+>   xattr -dr com.apple.quarantine "/Applications/MsgEater.app"
 >   ```
 >
 > Esto no compromete la seguridad: el código es abierto y la app funciona 100%
@@ -151,7 +185,7 @@ Política de seguridad y reporte de vulnerabilidades: [SECURITY.md](SECURITY.md)
 
 ### Software de terceros
 
-MSG Viewer usa las siguientes bibliotecas de código abierto. Todas sus
+MsgEater usa las siguientes bibliotecas de código abierto. Todas sus
 licencias son compatibles con la GPL-3.0. Cada una conserva su licencia y sus
 derechos de autor originales.
 

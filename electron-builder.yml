@@ -1,7 +1,7 @@
 # Empaquetado (FR-01, NFR-05/06). Targets: AppImage primario + deb/rpm (Linux),
 # dmg/zip universal (macOS; firma y notarización requieren entorno Apple).
-appId: io.github.oscarhenriquez.msgviewer
-productName: MSG Viewer
+appId: io.github.oscarhenriquez.msgeater
+productName: MsgEater
 copyright: © 2026 Oscar Henríquez
 
 directories:
@@ -33,7 +33,7 @@ linux:
   category: Office
   desktop:
     entry:
-      StartupWMClass: msg-viewer
+      StartupWMClass: msgeater
   artifactName: ${productName}-${version}-${arch}.${ext}
 
 mac:

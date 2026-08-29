@@ -1,8 +1,8 @@
-import type { LoadResult, MsgViewerApi } from '@shared/types';
+import type { LoadResult, MsgEaterApi } from '@shared/types';
 
 declare global {
   interface Window {
-    msgViewer: MsgViewerApi & { openDroppedFile(file: File): Promise<LoadResult> };
+    msgEater: MsgEaterApi & { openDroppedFile(file: File): Promise<LoadResult> };
   }
 }
 

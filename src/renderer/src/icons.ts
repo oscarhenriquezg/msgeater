@@ -8,7 +8,6 @@ import filePlusCorner from 'lucide-static/icons/file-plus-corner.svg?raw';
 import fileSearchCorner from 'lucide-static/icons/file-search-corner.svg?raw';
 import folderOpen from 'lucide-static/icons/folder-open.svg?raw';
 import link2Off from 'lucide-static/icons/link-2-off.svg?raw';
-import origami from 'lucide-static/icons/origami.svg?raw';
 import save from 'lucide-static/icons/save.svg?raw';
 import shieldAlert from 'lucide-static/icons/shield-alert.svg?raw';
 import shieldCheck from 'lucide-static/icons/shield-check.svg?raw';
@@ -32,6 +31,5 @@ export const ICONS = {
   shield: shieldCheck,
   shieldAlert,
   linkWarn: link2Off,
-  source: squareCode,
-  about: origami
+  source: squareCode
 } as const;

@@ -1,5 +1,5 @@
 {
-  "name": "msg-viewer",
+  "name": "msgeater",
   "version": "0.4.0",
   "description": "Visor multiplataforma de archivos .msg de Outlook",
   "scripts": {
@@ -49,9 +49,9 @@
     "rtf-stream-parser": "^3.8.1"
   },
   "main": "out/main/index.js",
-  "homepage": "https://github.com/oscarhenriquezg/msgview",
+  "homepage": "https://github.com/oscarhenriquezg/msgeater",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/oscarhenriquezg/msgview.git"
+    "url": "git+https://github.com/oscarhenriquezg/msgeater.git"
   }
 }

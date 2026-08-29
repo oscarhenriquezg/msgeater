@@ -27,7 +27,7 @@ export interface MenuOptions {
 }
 
 /** Repositorio del proyecto (menú Ayuda y diálogo "Acerca de"). */
-export const REPO_URL = 'https://github.com/oscarhenriquezg/msgview';
+export const REPO_URL = 'https://github.com/oscarhenriquezg/msgeater';
 
 /** Raíz del proyecto en dev y resources/app empaquetado (asar deshabilitado). */
 export const APP_ICON_PATH = join(app.getAppPath(), 'build', 'icon.png');
@@ -70,7 +70,7 @@ const STRINGS = {
     close: 'Cerrar',
     help: 'Ayuda',
     github: 'Proyecto en GitHub',
-    about: 'Acerca de MSG Viewer',
+    about: 'Acerca de MsgEater',
     aboutDetail:
       'Visor ligero y 100% offline de archivos .msg de Outlook para Linux y macOS.\n' +
       'Tu correo nunca sale de tu equipo: sin red, sin telemetría, sin nubes.\n\n' +
@@ -121,7 +121,7 @@ const STRINGS = {
     close: 'Close',
     help: 'Help',
     github: 'Project on GitHub',
-    about: 'About MSG Viewer',
+    about: 'About MsgEater',
     aboutDetail:
       'Lightweight, 100% offline viewer for Outlook .msg files on Linux and macOS.\n' +
       'Your mail never leaves your machine: no network, no telemetry, no clouds.\n\n' +

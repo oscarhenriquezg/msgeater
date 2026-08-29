@@ -1,15 +1,15 @@
 #!/usr/bin/env bash
-# Instalador de MSG Viewer para Linux y macOS.
-# Uso:  bash -c "$(curl -fsSL https://raw.githubusercontent.com/oscarhenriquezg/msgview/main/scripts/install.sh)"
+# Instalador de MsgEater para Linux y macOS.
+# Uso:  bash -c "$(curl -fsSL https://raw.githubusercontent.com/oscarhenriquezg/msgeater/main/scripts/install.sh)"
 #
 # Linux : descarga el AppImage (x86_64), lo deja en ~/.local/bin con permisos de
 #         ejecución y crea una entrada en el menú de aplicaciones.
-# macOS : descarga el .zip universal (arm64 + Intel), descomprime "MSG Viewer.app"
+# macOS : descarga el .zip universal (arm64 + Intel), descomprime "MsgEater.app"
 #         en ~/Applications y le quita la cuarentena (la app no está firmada).
 # No requiere privilegios de root en ninguno de los dos.
 set -euo pipefail
 
-REPO="oscarhenriquezg/msgview"
+REPO="oscarhenriquezg/msgeater"
 API="https://api.github.com/repos/${REPO}/releases/latest"
 
 info() { printf '\033[1;34m==>\033[0m %s\n' "$1"; }
@@ -92,7 +92,7 @@ ensure_fuse2() {
 install_linux() {
   [ "$arch" = "x86_64" ] || err "En Linux solo hay build x86_64 (detectado: ${arch})."
   local bin_dir="${HOME}/.local/bin" apps_dir="${HOME}/.local/share/applications"
-  local target="${bin_dir}/MSGViewer.AppImage" url
+  local target="${bin_dir}/MsgEater.AppImage" url
   url="$(asset_url 'x86_64\.AppImage')"
 
   info "Descargando: ${url##*/}"
@@ -101,12 +101,12 @@ install_linux() {
   chmod +x "$target"
 
   info "Creando entrada en el menú de aplicaciones…"
-  cat > "${apps_dir}/msg-viewer.desktop" <<EOF
+  cat > "${apps_dir}/msgeater.desktop" <<EOF
 [Desktop Entry]
 Type=Application
-Name=MSG Viewer
+Name=MsgEater
 Exec=${target} %f
-Icon=msg-viewer
+Icon=msgeater
 MimeType=application/vnd.ms-outlook;
 Categories=Office;
 Terminal=false
@@ -116,17 +116,17 @@ EOF
   # Comprobar FUSE2 (requisito de los AppImage) y ofrecer instalarlo si falta.
   ensure_fuse2 "$target"
 
-  ok "✓ MSG Viewer instalado."
+  ok "✓ MsgEater instalado."
   echo "  Ejecutable: ${target}"
   case ":${PATH}:" in
-    *":${bin_dir}:"*) echo "  Lánzalo con: MSGViewer.AppImage   (o desde el menú de apps)";;
+    *":${bin_dir}:"*) echo "  Lánzalo con: MsgEater.AppImage   (o desde el menú de apps)";;
     *) echo "  Añade ~/.local/bin al PATH, o lánzalo con: ${target}";;
   esac
 }
 
 install_macos() {
   command -v unzip >/dev/null 2>&1 || err "unzip no está disponible."
-  local apps_dir="${HOME}/Applications" app="MSG Viewer.app" url tmp
+  local apps_dir="${HOME}/Applications" app="MsgEater.app" url tmp
   url="$(asset_url 'mac\.zip')"   # .zip universal: sirve para arm64 e Intel
 
   info "Descargando: ${url##*/}"
@@ -141,7 +141,7 @@ install_macos() {
   # App sin firmar: quitar la cuarentena para que Gatekeeper no la bloquee.
   xattr -dr com.apple.quarantine "${apps_dir}/${app}" 2>/dev/null || true
 
-  ok "✓ MSG Viewer instalado."
+  ok "✓ MsgEater instalado."
   echo "  App: ${apps_dir}/${app}"
   echo "  Ábrela desde Launchpad/Finder, o con: open \"${apps_dir}/${app}\""
 }

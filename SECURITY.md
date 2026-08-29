@@ -1,6 +1,6 @@
 # Política de seguridad
 
-MSG Viewer es un visor de correo **100 % offline** cuyo objetivo es abrir
+MsgEater es un visor de correo **100 % offline** cuyo objetivo es abrir
 archivos `.msg`/`.eml`/`.emlx` —que pueden ser hostiles— sin poner en riesgo al
 usuario. La seguridad es parte del propósito del proyecto, así que los informes
 de vulnerabilidad son bienvenidos y se tratan con prioridad.
@@ -19,9 +19,9 @@ Solo la última versión publicada recibe correcciones de seguridad.
 **No abras un issue público** para fallos de seguridad. En su lugar:
 
 1. Preferente: usa **GitHub Security Advisories** →
-   [«Report a vulnerability»](https://github.com/oscarhenriquezg/msgview/security/advisories/new).
+   [«Report a vulnerability»](https://github.com/oscarhenriquezg/msgeater/security/advisories/new).
 2. Alternativa: escribe a **oscar.henriquez.gonzalez@gmail.com** con el asunto
-   `[SECURITY] msgview`.
+   `[SECURITY] msgeater`.
 
 Incluye, si puedes:
 

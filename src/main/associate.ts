@@ -41,16 +41,16 @@ export async function registerFileTypes(exts: string[], win: BrowserWindow | nul
 
   // En desarrollo, identidad separada: no pisar al .desktop del paquete.
   const isDev = !app.isPackaged && !appImage;
-  const desktopId = isDev ? 'msg-viewer-dev.desktop' : 'msg-viewer.desktop';
+  const desktopId = isDev ? 'msgeater-dev.desktop' : 'msgeater.desktop';
   const mimeList = types.map((t) => t.mime).join(';');
   const desktop = `[Desktop Entry]
-Name=MSG Viewer${isDev ? ' (dev)' : ''}
+Name=MsgEater${isDev ? ' (dev)' : ''}
 Comment=Visor de archivos de correo (.msg/.eml/.emlx)
 Exec=${execLine}
 Terminal=false
 Type=Application
-Icon=msg-viewer
-StartupWMClass=msg-viewer
+Icon=msgeater
+StartupWMClass=msgeater
 MimeType=${mimeList};
 Categories=Office;
 `;
@@ -77,9 +77,9 @@ ${customMimes
     await mkdir(iconDir, { recursive: true });
     await writeFile(join(appsDir, desktopId), desktop, 'utf-8');
     if (customMimes.length > 0) {
-      await writeFile(join(mimeDir, 'msg-viewer.xml'), mimeXml, 'utf-8');
+      await writeFile(join(mimeDir, 'msgeater.xml'), mimeXml, 'utf-8');
     }
-    await copyFile(APP_ICON_PATH, join(iconDir, 'msg-viewer.png')).catch(() => {});
+    await copyFile(APP_ICON_PATH, join(iconDir, 'msgeater.png')).catch(() => {});
 
     await run('update-mime-database', [join(home, '.local', 'share', 'mime')]).catch(() => {});
     await run('update-desktop-database', [appsDir]).catch(() => {});
@@ -89,7 +89,7 @@ ${customMimes
 
     const list = types.map((t) => `.${t.ext}`).join(', ');
     notify(
-      es ? `Listo: ${list} se abrirán con MSG Viewer` : `Done: ${list} will now open with MSG Viewer`
+      es ? `Listo: ${list} se abrirán con MsgEater` : `Done: ${list} will now open with MsgEater`
     );
   } catch (e) {
     notify(
@@ -139,7 +139,7 @@ export async function fileTypesAssociated(): Promise<boolean> {
   if (process.platform !== 'linux') return true;
   const appImage = process.env['APPIMAGE'];
   const isDev = !app.isPackaged && !appImage;
-  const desktopId = isDev ? 'msg-viewer-dev.desktop' : 'msg-viewer.desktop';
+  const desktopId = isDev ? 'msgeater-dev.desktop' : 'msgeater.desktop';
   try {
     for (const t of FILE_TYPES) {
       const { stdout } = await run('xdg-mime', ['query', 'default', t.mime]);

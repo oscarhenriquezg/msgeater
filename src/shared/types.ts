@@ -100,7 +100,7 @@ export type RemoteImageResult =
   | { ok: false; reason: 'error' | 'too-large' | 'not-image' };
 
 /** API expuesta al renderer vía contextBridge (preload). */
-export interface MsgViewerApi {
+export interface MsgEaterApi {
   /** Abre el diálogo nativo de "Abrir archivo" y carga el .msg elegido. */
   openFileDialog(): Promise<LoadResult | null>;
   /** Carga un archivo arrastrado (el renderer solo conoce la ruta). */

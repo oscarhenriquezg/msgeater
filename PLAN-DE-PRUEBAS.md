@@ -1,4 +1,4 @@
-# Plan de pruebas — MSG Viewer
+# Plan de pruebas — MsgEater
 
 Listado de **todas las features actuales** con una prueba para cada una, a pasar
 antes de publicar una versión. Cada feature indica:

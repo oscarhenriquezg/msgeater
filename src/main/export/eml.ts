@@ -54,7 +54,7 @@ function base64Lines(content: Uint8Array): string {
 }
 
 function boundary(tag: string): string {
-  return `----=_msgviewer_${tag}_${Math.random().toString(36).slice(2, 10)}`;
+  return `----=_msgeater_${tag}_${Math.random().toString(36).slice(2, 10)}`;
 }
 
 /** Extrae Message-ID de las cabeceras de transporte originales, si existen. */

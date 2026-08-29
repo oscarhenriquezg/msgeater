@@ -1,11 +1,13 @@
 import type { ExportFormat, LoadResult, MsgAttachmentMeta, MsgDocument } from '@shared/types';
 import { MAX_PNG_HEIGHT } from '@shared/types';
 import { isExecutableAttachment } from '@shared/executable';
+import iconToolbar from './assets/icon-toolbar.png';
+import iconAbout from './assets/icon-about.png';
 import { ICONS } from './icons';
 import { initI18n, locale, t } from './i18n';
 import { sanitizeEmailHtml } from './sanitize';
 
-const api = window.msgViewer;
+const api = window.msgEater;
 
 const $ = <T extends HTMLElement = HTMLElement>(id: string): T =>
   document.getElementById(id) as T;
@@ -1072,7 +1074,7 @@ async function init(): Promise<void> {
   iconBtn('btn-unlink', ICONS.unlink, t('actions.unlink'));
   iconBtn('btn-link-warn', ICONS.linkWarn, t('actions.linkWarn'));
   iconBtn('btn-source', ICONS.source, t('actions.source'));
-  iconBtn('btn-about', ICONS.about, t('actions.about'));
+  iconBtn('btn-about', `<img src="${iconToolbar}" alt="" class="brand-icon" />`, t('actions.about'));
   $('unlink-icon').innerHTML = ICONS.shield;
   $('unlink-title').textContent = t('unlink.title');
   $('unlink-body').textContent = t('unlink.body');
@@ -1080,7 +1082,7 @@ async function init(): Promise<void> {
   $('btn-unlink-cancel').textContent = t('unlink.cancel');
   $('linkwarn-icon').innerHTML = ICONS.shieldAlert;
   $('btn-linkwarn-cancel').textContent = t('unlink.cancel');
-  $('about-icon').innerHTML = ICONS.about;
+  $('about-icon').innerHTML = `<img src="${iconAbout}" alt="" />`;
   $('btn-about-close').textContent = t('about.close');
   $('associate-icon').innerHTML = ICONS.open;
   $('associate-title').textContent = t('associate.title');

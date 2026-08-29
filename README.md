@@ -189,6 +189,7 @@ autor:
 | **SHA-256 (`SHA256SUMS`)** | Cada release permite comprobar que el archivo descargado es *byte a byte* el publicado |
 | **SBOM (SPDX)** | Inventario firmado de qué depende cada release, con versiones |
 | **GitHub Artifact Attestations** | Prueba criptográfica (Sigstore) de que el binario salió de este repo y este commit — no de un tercero |
+| **Escaneo VirusTotal** | ~70 motores antivirus revisan cada instalable publicado — señal adicional, no una certificación ([detalle](docs/VERIFY-RELEASE.md#5-consultar-el-escaneo-de-virustotal-opcional-señal-adicional)) |
 
 Ninguno de estos controles por separado — ni siquiera todos juntos —
 significa "100% seguro"; cada uno demuestra algo puntual y verificable. El

@@ -48,6 +48,9 @@
     "mailparser": "^3.9.17",
     "rtf-stream-parser": "^3.8.1"
   },
+  "overrides": {
+    "esbuild": "^0.28.1"
+  },
   "main": "out/main/index.js",
   "homepage": "https://github.com/oscarhenriquezg/msgeater",
   "repository": {

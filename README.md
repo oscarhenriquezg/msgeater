@@ -9,6 +9,10 @@
 </p>
 
 <p align="center">
+  <b>Español</b> · <a href="README.en.md">English</a>
+</p>
+
+<p align="center">
   <img src="assets/icon-source/png/MsgEater-256x256.png" alt="Icono de MsgEater" width="128" />
 </p>
 
@@ -208,6 +212,13 @@ está en **[SECURITY.md](SECURITY.md)**.
 | PNG ≤ 20.000 px | Para correos más largos, la app ofrece truncar o sugiere PDF. |
 | Tipos no soportados | Citas, contactos y tareas se informan como no soportados; S/MIME cifrado no puede mostrarse; las firmas se indican pero no se verifican. |
 
+## Uso
+
+La referencia completa de la interfaz externa —invocación por línea de
+comandos, entradas aceptadas, todas las acciones con su atajo de teclado y el
+esquema de salida de cada formato de exportación— está en
+**[docs/USER-GUIDE.md](docs/USER-GUIDE.md)**.
+
 ## Desarrollo
 
 ```bash
@@ -215,6 +226,7 @@ npm install
 npm run fixtures      # genera el corpus de .msg de prueba (sintético)
 npm run dev           # arranque con recarga automática
 npm test              # unit tests (parser, EML, corpus adversarial)
+npm run test:coverage # unit tests con informe de cobertura
 npm run build && npx playwright test   # E2E sobre la app construida
 npm run build:linux   # AppImage/deb/rpm en release/
 npm run build:mac     # dmg/zip (requiere macOS)
@@ -232,6 +244,18 @@ documento serializado con HTML ya sanitizado y muestra el cuerpo en un iframe
 sandbox sin ejecución de scripts. El bloqueo de red, los diálogos nativos y la
 escritura a disco viven exclusivamente en main. Especificación completa en
 [SRS-visor-msg-v0.2.md](SRS-visor-msg-v0.2.md).
+
+## Contribuir
+
+Las contribuciones son bienvenidas, en español o en inglés. Los **bugs y
+propuestas de mejora** van a [Issues](https://github.com/oscarhenriquezg/msgeater/issues);
+las **vulnerabilidades de seguridad, no** — esas siguen el procedimiento
+privado de [SECURITY.md](SECURITY.md).
+
+Antes de abrir un *pull request*, lee **[CONTRIBUTING.md](CONTRIBUTING.md)**:
+resume el flujo (fork → rama → PR contra `main`, que está protegida y exige
+que los checks pasen), los requisitos de lint/typecheck/tests y la política de
+que todo cambio de funcionalidad viene con sus tests.
 
 ## Licencia
 

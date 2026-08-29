@@ -103,18 +103,22 @@ equipo.
 
 ### Instalación rápida (una línea)
 
-Funciona en **Linux y macOS**; el script detecta el sistema y descarga el artefacto adecuado. Sin permisos de root:
+Funciona en **Linux y macOS**; el script detecta el sistema y descarga el artefacto adecuado. Si ya tienes una versión instalada, la actualiza (y si venías de un método distinto al que le toca ahora a tu distro, te ofrece limpiar el anterior para no duplicar la entrada en el menú):
 
 ```bash
 bash -c "$(curl -fsSL https://raw.githubusercontent.com/oscarhenriquezg/msgeater/main/scripts/install.sh)"
 ```
 
-- **Linux** — deja el AppImage en `~/.local/bin` y crea la entrada en el menú de aplicaciones.
+- **Linux** — detecta la familia de tu distro: `.deb` en Debian/Ubuntu/Mint…, `.rpm`
+  en Fedora/RHEL/openSUSE… (ambos vía el gestor de paquetes del sistema, piden
+  sudo). Si no reconoce ninguna de las dos, cae al AppImage en `~/.local/bin`
+  con su propia entrada de menú (sin root).
 - **macOS** — instala `MsgEater.app` en `~/Applications` y le quita la cuarentena de Gatekeeper (la app no está firmada).
 
-> En Linux los AppImage requieren **FUSE2** (`libfuse2`). Si al arrancar ves un
-> error de FUSE, instálalo (`sudo apt install libfuse2` / `sudo dnf install fuse
-> fuse-libs`) o ejecuta con `~/.local/bin/MsgEater.AppImage --appimage-extract-and-run`.
+> En Linux, si termina usando el AppImage, este requiere **FUSE2** (`libfuse2`).
+> Si al arrancar ves un error de FUSE, instálalo (`sudo apt install libfuse2` /
+> `sudo dnf install fuse fuse-libs`) o ejecuta con
+> `~/.local/bin/MsgEater.AppImage --appimage-extract-and-run`.
 
 ### Descarga manual
 

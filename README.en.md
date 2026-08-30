@@ -197,7 +197,7 @@ you take the author's word for it:
 | **SHA-256 (`SHA256SUMS`)** | Every release lets you check the downloaded file is *byte for byte* the published one |
 | **SBOM (SPDX)** | Signed inventory of what each release depends on, with versions |
 | **GitHub Artifact Attestations** | Cryptographic proof (Sigstore) that the binary came from this repo and this commit — not from a third party |
-| **VirusTotal scan** | **0 malicious / 0 suspicious** out of 75 engines on v0.4.4 (latest scanned version) — [see report](https://www.virustotal.com/gui/file/5098a51c99b8e9138ef4b507e2c1b6e0667fc3e9ede878bc7aad007450e96942) · [all 5 installers + how to check it yourself](docs/VERIFY-RELEASE.md) |
+| **VirusTotal scan** | **0 malicious / 0 suspicious** out of 75 engines on v0.5.0 (latest scanned version) — [see report](https://www.virustotal.com/gui/file/badf4388d46083e4c39d7cdb0568d3a6de7c1f878d29e733e6237f8a89aca724) · [all 5 installers + how to check it yourself](docs/VERIFY-RELEASE.md) |
 
 None of these controls on its own — not even all of them together — means
 "100% secure"; each one demonstrates something specific and verifiable. What

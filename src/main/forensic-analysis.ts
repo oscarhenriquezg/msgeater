@@ -16,11 +16,20 @@ import type { Iocs } from './headers-analysis';
  * así que hay que rescatarlos ANTES de quitar las etiquetas — si no, quitar
  * `<...>` se lleva por delante justo las URLs que se quieren analizar, que es
  * el dato más relevante para detectar phishing.
+ *
+ * Las etiquetas de cierre admiten espacios (`</script >`, `</script\n>`), así
+ * que el patrón los contempla: HTML lo permite y un correo hostil puede usarlo
+ * para que el contenido de un `<script>` se cuele en el texto analizado.
+ *
+ * Limitación asumida: esto es extracción de texto con expresiones regulares,
+ * no un parser de HTML, y alimenta ÚNICAMENTE el análisis de indicadores. Lo
+ * que se muestra al usuario no pasa por aquí: eso lo sanitiza DOMPurify con la
+ * política de `@shared/sanitize-policy`.
  */
 function bodyToText(bodyHtml: string): string {
   const withoutCode = bodyHtml
-    .replace(/<script[\s\S]*?<\/script>/gi, ' ')
-    .replace(/<style[\s\S]*?<\/style>/gi, ' ');
+    .replace(/<script\b[^>]*>[\s\S]*?<\/script\s*>/gi, ' ')
+    .replace(/<style\b[^>]*>[\s\S]*?<\/style\s*>/gi, ' ');
   const attrUrls = [...withoutCode.matchAll(/\b(?:href|src)\s*=\s*["']([^"']+)["']/gi)].map(
     (m) => m[1]!
   );

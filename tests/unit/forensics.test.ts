@@ -224,6 +224,28 @@ describe('computeSignals sobre fixtures reales', () => {
     expect(computeSignals(result.document)).toEqual([]);
   });
 
+  // CodeQL (js/bad-tag-filter) detectó que el patrón original solo cubría
+  // "</script>" exacto: HTML admite espacios antes del ">", así que un correo
+  // podía colar el contenido de un script en el texto analizado.
+  it('descarta scripts y estilos aunque la etiqueta de cierre lleve espacios', async () => {
+    const html = [
+      '<p>Visita <a href="https://legitimo.example/a">aquí</a></p>',
+      '<script>var c = "https://desde-script.example/x";</script >',
+      '<style>body { background: url("https://desde-style.example/y"); }</style\n>'
+    ].join('');
+    const doc = {
+      metadata: {},
+      bodyHtml: html,
+      attachments: [],
+      rawHeaders: ''
+    } as unknown as Parameters<typeof documentIocs>[0];
+
+    const iocs = documentIocs(doc);
+    expect(iocs.domains).toContain('legitimo.example');
+    expect(iocs.domains).not.toContain('desde-script.example');
+    expect(iocs.domains).not.toContain('desde-style.example');
+  });
+
   it('extrae los indicadores del correo suplantado', async () => {
     const result = await parseAny(load('spoofed.eml'), 'spoofed.eml');
     if (!result.ok) return;

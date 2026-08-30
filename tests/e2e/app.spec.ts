@@ -542,3 +542,29 @@ test('triaje: el panel es accesible desde la barra aunque no haya señales', asy
   await page.click('#forensics-hashes-title');
   await expect(page.locator('.hash-row').first()).toBeVisible();
 });
+
+test('la barra de herramientas no desborda en el ancho mínimo de ventana', async () => {
+  await launch(join(FIXTURES, 'html-basic.msg'));
+  await expect(page.locator('#header')).toBeVisible();
+
+  // 640 px es el minWidth que la propia app impone (createAppWindow). Antes de
+  // permitir que la barra envuelva, a ese ancho quedaban fuera de la pantalla
+  // Exportar y Acerca de: visibles en el DOM pero inalcanzables con el ratón.
+  for (const width of [640, 800, 1100]) {
+    await app.evaluate(({ BrowserWindow }, w) =>
+      BrowserWindow.getAllWindows()[0]?.setBounds({ width: w, height: 700 }), width);
+    await page.waitForTimeout(300);
+
+    const fuera = await page.evaluate(() => {
+      const tb = document.getElementById('toolbar')!;
+      const vw = document.documentElement.clientWidth;
+      return [...tb.children]
+        .filter((c) => {
+          const r = c.getBoundingClientRect();
+          return r.right > vw + 1 || r.left < -1;
+        })
+        .map((c) => c.id || c.className);
+    });
+    expect(fuera, `elementos fuera de pantalla a ${width}px`).toEqual([]);
+  }
+});

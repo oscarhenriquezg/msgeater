@@ -125,6 +125,10 @@ h1 {
 /* ---------- Barra de herramientas (sobre la cabecera) ---------- */
 .toolbar {
   display: flex;
+  /* Con la ventana en su ancho mínimo (640 px) los botones no caben en una
+     sola fila: sin envolver, los de la derecha —Exportar y Acerca de— quedaban
+     fuera de la pantalla e inalcanzables. */
+  flex-wrap: wrap;
   gap: 8px;
   align-items: center;
   flex: none;
@@ -133,8 +137,11 @@ h1 {
   padding: 8px 16px;
 }
 .toolbar .divider { width: 1px; align-self: stretch; background: var(--border); margin: 2px 2px; }
-/* Empuja Exportar y Acerca de al extremo derecho de la barra. */
-.toolbar .spacer { flex: 1 1 auto; }
+/* Empuja Exportar y Acerca de al extremo derecho. El margin-left:auto actúa
+   por LÍNEA, así que también los mantiene a la derecha cuando la barra envuelve
+   en pantallas estrechas; el spacer puede colapsar a 0 en ese caso. */
+.toolbar .spacer { flex: 1 1 0; min-width: 0; }
+.toolbar .export-wrap { margin-left: auto; }
 .iconbtn { padding: 6px 8px; line-height: 0; }
 .toolbar svg { width: 17px; height: 17px; stroke-width: 2; vertical-align: middle; }
 .toolbar img.brand-icon { width: 18px; height: 18px; vertical-align: middle; }

@@ -82,6 +82,7 @@ them, sanitize them — and display them without letting them leave your machine
 | **Unlink** | One button renders every link inert (struck through) so you can inspect suspicious mail safely |
 | **Office macros** | Flags a `.docm`/`.xls`/… carrying a VBA project, without opening or running it |
 | **Delivery route** | The `Received` chain as a readable timeline (origin, hops, IPs and delays), with the caveat that the sender can fabricate the earliest hops |
+| **Command-line analysis** | The same analysis with no window and no display server (`--json` to pipe it): triaging a whole mailbox is not done one message at a time. [Guide](docs/USER-GUIDE.md#11-analizador-de-línea-de-comandos-sin-ventana) |
 | **Attachments under control** | Only written to disk on an explicit action; temporary files from "Open" are purged on exit |
 
 ### 🛠️ Actions and export

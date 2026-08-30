@@ -13,7 +13,8 @@
     "test:e2e": "playwright test",
     "build:linux": "electron-vite build && electron-builder --linux",
     "build:mac": "electron-vite build && electron-builder --mac",
-    "fixtures": "node scripts/make-fixtures.mjs"
+    "fixtures": "node scripts/make-fixtures.mjs",
+    "analyze": "node out/main/cli.js"
   },
   "keywords": [],
   "author": "Oscar Henríquez <oscar.henriquez.gonzalez@gmail.com>",

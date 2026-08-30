@@ -93,7 +93,9 @@ export function buildSourceViewHtml(data: SourceViewData): string {
 ${data.hops
   .map(
     (h, i) =>
-      `<tr><td>${i + 1}</td><td>${esc(h.from)}</td><td>${esc(h.by)}</td><td>${
+      `<tr><td>${i + 1}</td><td>${esc(h.from)}${h.rdns ? ` (${esc(h.rdns)})` : ''}${
+        h.ip ? ` [${esc(h.ip)}]` : ''
+      }</td><td>${esc(h.by)}</td><td>${
         h.date ? esc(h.date.replace('T', ' ').replace(/\.\d+Z/, 'Z')) : '—'
       }</td><td class="${(h.deltaSeconds ?? 0) > 60 ? 'slow' : ''}">${fmtDelta(h.deltaSeconds)}</td></tr>`
   )

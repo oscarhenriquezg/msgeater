@@ -44,6 +44,7 @@ const api: MsgEaterApi & { openDroppedFile(file: File): Promise<LoadResult> } = 
   getCurrentDocument: () => ipcRenderer.invoke('get-current-document'),
   attachmentHashes: () => ipcRenderer.invoke('attachments:hashes'),
   messageIocs: () => ipcRenderer.invoke('message:iocs'),
+  messageRoute: () => ipcRenderer.invoke('message:route'),
   // FR-02b: el renderer no conoce rutas; webUtils las resuelve en el preload.
   openDroppedFile: (file: File) => {
     const path = webUtils.getPathForFile(file);

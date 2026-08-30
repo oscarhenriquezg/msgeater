@@ -1,4 +1,4 @@
-import type { ExportFormat, LoadResult, MsgAttachmentMeta, MsgDocument } from '@shared/types';
+import type { ExportFormat, LoadResult, MessageHop, MsgAttachmentMeta, MsgDocument } from '@shared/types';
 import { MAX_PNG_HEIGHT } from '@shared/types';
 import { isExecutableAttachment } from '@shared/executable';
 import iconToolbar from './assets/icon-toolbar.png';
@@ -27,6 +27,8 @@ const el = {
   forensicsDialog: $<HTMLDialogElement>('forensics-dialog'),
   forensicsList: $('forensics-list'),
   forensicsIocs: $('forensics-iocs'),
+  forensicsRouteBox: $('forensics-route-box'),
+  forensicsRoute: $('forensics-route'),
   forensicsHashes: $('forensics-hashes'),
   emptyState: $('empty-state'),
   errorState: $('error-state'),
@@ -229,7 +231,79 @@ function iocGroup(titleKey: string, values: string[]): HTMLElement | null {
   return box;
 }
 
-/** Carga IOCs y hashes (ambos bajo demanda) y abre el diálogo. */
+/** Demora entre dos saltos, ya legible. */
+function formatDelay(seconds: number): string {
+  // Un salto que dice haber ocurrido ANTES que el anterior no es un viaje
+  // hacia atrás: son dos servidores con la hora distinta. Se dice así en vez
+  // de mostrar un número negativo que parecería un error de la aplicación.
+  if (seconds < 0) return t('forensics.route.skew');
+  if (seconds < 120) return `+${seconds} s`;
+  if (seconds < 7200) return `+${Math.round(seconds / 60)} min`;
+  return `+${Math.round(seconds / 3600)} h`;
+}
+
+/** Línea de tiempo de la entrega: un salto por línea, del origen a la entrega. */
+function renderRoute(hops: MessageHop[]): void {
+  // Un .msg sin PidTagTransportMessageHeaders no trae cadena alguna; en ese
+  // caso la sección entera sobra en vez de mostrarse vacía.
+  el.forensicsRouteBox.hidden = hops.length === 0;
+  if (hops.length === 0) return;
+
+  el.forensicsRoute.replaceChildren(
+    ...hops.map((hop, i) => {
+      const li = document.createElement('li');
+      li.className = 'route-hop';
+
+      const host = document.createElement('span');
+      host.className = 'route-host';
+      host.textContent = hop.from;
+      const line = document.createElement('div');
+      line.className = 'route-line';
+      line.append(host);
+
+      // Cuando el emisor no anunció nombre, `from` YA es la IP: repetirla en
+      // el chip mostraría el mismo dato dos veces seguidas.
+      if (hop.ip && hop.ip !== hop.from) {
+        const ip = document.createElement('code');
+        ip.className = 'route-ip copyable';
+        ip.textContent = hop.ip;
+        ip.title = t('meta.clickToCopy');
+        ip.addEventListener('click', () => {
+          api.copyText(hop.ip!);
+          toast(t('toast.copied', { what: hop.ip! }));
+        });
+        line.append(ip);
+      }
+
+      // El primero es el origen que DECLARA el mensaje y el último, la entrega
+      // en la infraestructura del destinatario: son los dos extremos que
+      // interesan, y el aviso de la sección explica cuál de ellos es fiable.
+      const badgeKey =
+        i === 0 ? 'forensics.route.origin' : i === hops.length - 1 ? 'forensics.route.delivered' : null;
+      if (badgeKey) {
+        const badge = document.createElement('span');
+        badge.className = 'route-badge';
+        badge.textContent = t(badgeKey);
+        line.append(badge);
+      }
+
+      const meta = document.createElement('div');
+      meta.className = 'route-meta';
+      const parts = [t('forensics.route.by', { by: hop.by })];
+      // Solo aparece si NO coincide con el nombre anunciado, que es cuando
+      // dice algo: el emisor se presentó con un nombre y su IP resuelve a otro.
+      if (hop.rdns) parts.push(t('forensics.route.rdns', { rdns: hop.rdns }));
+      parts.push(hop.date ? hop.date.replace('T', ' ').replace(/\.\d+Z$/, 'Z') : t('forensics.route.noDate'));
+      if (hop.deltaSeconds !== undefined) parts.push(formatDelay(hop.deltaSeconds));
+      meta.textContent = parts.join(' · ');
+
+      li.append(line, meta);
+      return li;
+    })
+  );
+}
+
+/** Carga IOCs, ruta y hashes (todo bajo demanda) y abre el diálogo. */
 async function openForensicsDialog(): Promise<void> {
   const doc = currentDoc;
   if (!doc) return;
@@ -237,9 +311,15 @@ async function openForensicsDialog(): Promise<void> {
 
   el.forensicsHashes.textContent = t('forensics.hashes.loading');
   el.forensicsIocs.replaceChildren();
+  el.forensicsRoute.replaceChildren();
   el.forensicsDialog.showModal();
 
-  const [iocs, hashes] = await Promise.all([api.messageIocs(), api.attachmentHashes()]);
+  const [iocs, hashes, hops] = await Promise.all([
+    api.messageIocs(),
+    api.attachmentHashes(),
+    api.messageRoute()
+  ]);
+  renderRoute(hops);
 
   const groups = [
     iocGroup('forensics.iocs.urls', iocs.urls),
@@ -1229,6 +1309,8 @@ async function init(): Promise<void> {
   $('forensics-title').textContent = t('forensics.title');
   $('forensics-disclaimer').textContent = t('forensics.disclaimer');
   $('forensics-iocs-title').textContent = t('forensics.iocs');
+  $('forensics-route-title').textContent = t('forensics.route');
+  $('forensics-route-hint').textContent = t('forensics.route.hint');
   $('forensics-hashes-title').textContent = t('forensics.hashes');
   $('btn-forensics-close').textContent = t('forensics.close');
   $('associate-icon').innerHTML = ICONS.open;

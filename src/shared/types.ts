@@ -202,6 +202,35 @@ export interface MsgEaterApi {
   attachmentHashes(): Promise<{ id: number; sha256: string }[]>;
   /** Indicadores (URLs, dominios, IPs, direcciones) del mensaje actual. */
   messageIocs(): Promise<Iocs>;
+  /** Ruta de entrega (cadena `Received`) del mensaje actual, en orden cronológico. */
+  messageRoute(): Promise<MessageHop[]>;
+}
+
+/**
+ * Un salto de la cadena `Received`, ya en orden cronológico (el primero es el
+ * origen declarado).
+ *
+ * Advertencia de interpretación: cada servidor AÑADE su propia línea al
+ * principio, sin poder verificar las anteriores. Por eso los saltos más
+ * antiguos —justo los que dicen de dónde salió el correo— los puede haber
+ * escrito íntegramente quien lo envía. Solo los últimos, los añadidos por la
+ * infraestructura que recibe, son de fiar.
+ */
+export interface MessageHop {
+  /** Nombre con el que el emisor se anunció (HELO/EHLO). */
+  from: string;
+  by: string;
+  /**
+   * Nombre inverso (rDNS) que anotó el servidor receptor, solo si NO coincide
+   * con el anunciado: que difieran es justo lo que interesa mirar.
+   */
+  rdns?: string;
+  /** IP del emisor declarada en el salto, si venía. */
+  ip?: string;
+  /** Fecha del salto en ISO, si se pudo interpretar. */
+  date?: string;
+  /** Segundos desde el salto anterior (negativo si los relojes no coinciden). */
+  deltaSeconds?: number;
 }
 
 /** Indicadores de compromiso extraídos del mensaje. */

@@ -1,6 +1,12 @@
-import type { MsgDocument, Signal } from '@shared/types';
+import type { MessageHop, MsgDocument, Signal } from '@shared/types';
 import { buildSignals } from '@shared/forensics';
-import { extractIocs, parseAddressHeaders, parseAuthResults, sameOrganization } from './headers-analysis';
+import {
+  extractIocs,
+  parseAddressHeaders,
+  parseAuthResults,
+  parseReceivedChain,
+  sameOrganization
+} from './headers-analysis';
 import type { Iocs } from './headers-analysis';
 
 /**
@@ -50,6 +56,20 @@ function bodyToText(bodyHtml: string): string {
  */
 export function documentIocs(doc: MsgDocument): Iocs {
   return extractIocs(doc.rawHeaders ?? '', bodyToText(doc.bodyHtml));
+}
+
+/**
+ * Ruta de entrega del mensaje. Como los indicadores, se pide bajo demanda: es
+ * contexto para leer, no entra en las señales.
+ *
+ * Deliberadamente NO genera ninguna señal de riesgo. La cadena `Received` es
+ * ampliable por cualquiera —quien envía puede inventarse los saltos de origen
+ * enteros—, así que derivar de ella un veredicto automático sería construir
+ * una acusación sobre datos que controla el atacante. Se muestra para que la
+ * lea una persona, junto con la advertencia de hasta dónde es fiable.
+ */
+export function documentRoute(doc: MsgDocument): MessageHop[] {
+  return parseReceivedChain(doc.rawHeaders ?? '');
 }
 
 /** Señales de riesgo del documento. Lista vacía = nada detectado (≠ "seguro"). */

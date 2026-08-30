@@ -397,7 +397,16 @@ const EML_SPOOFED = [
   'Subject: Verifica tu cuenta',
   'Date: Mon, 10 Jun 2024 12:00:00 +0000',
   'Authentication-Results: mx.empresa.example; spf=fail smtp.mailfrom=evil.example; dmarc=fail',
-  'Received: from evil.example (203.0.113.45) by mx.empresa.example; Mon, 10 Jun 2024 12:00:00 +0000',
+  // Cadena de tres saltos (la cabecera los lleva del más reciente al más
+  // antiguo) para ejercitar la línea de tiempo: origen declarado, relevo
+  // intermedio y entrega final, con una demora apreciable en el último tramo.
+  'Received: from mx.empresa.example (mx.empresa.example [192.0.2.10])',
+  '\tby buzon.empresa.example with ESMTPS;',
+  '\tMon, 10 Jun 2024 12:02:20 +0000',
+  'Received: from relevo.evil.example (relevo.evil.example [198.51.100.7])',
+  '\tby mx.empresa.example with ESMTP;',
+  '\tMon, 10 Jun 2024 12:00:20 +0000',
+  'Received: from evil.example (203.0.113.45) by relevo.evil.example; Mon, 10 Jun 2024 12:00:00 +0000',
   'MIME-Version: 1.0',
   'Content-Type: text/html; charset=utf-8',
   '',

@@ -519,6 +519,28 @@ test('triaje: el aviso de señales aparece solo en el correo sospechoso', async 
   await page.click('#forensics-iocs-title');
   await expect(page.locator('.ioc-group').first()).toBeVisible();
   await expect(page.locator('#forensics-iocs')).toContainText('bit.ly');
+
+  // Ruta de entrega: los tres saltos de la cadena Received, en orden
+  // cronológico y con la IP del origen declarado.
+  await page.click('#forensics-route-title');
+  await expect(page.locator('.route-hop')).toHaveCount(3);
+  const first = page.locator('.route-hop').first();
+  await expect(first).toContainText('evil.example');
+  await expect(first.locator('.route-ip')).toHaveText('203.0.113.45');
+  await expect(page.locator('.route-hop').last()).toContainText('buzon.empresa.example');
+
+  // El aviso de que los primeros saltos los puede escribir quien envía es
+  // parte de la información, no un adorno: sin él la ruta se lee como un
+  // origen comprobado.
+  await expect(page.locator('#forensics-route-hint')).toContainText(/comprobar|verify/i);
+});
+
+test('triaje: sin cadena Received la sección de ruta no se muestra vacía', async () => {
+  await launch(join(FIXTURES, 'html-basic.msg'));
+  await page.click('#btn-analysis');
+  await expect(page.locator('#forensics-dialog')).toBeVisible();
+  await expect(page.locator('#forensics-hashes-box')).toBeVisible();
+  await expect(page.locator('#forensics-route-box')).toBeHidden();
 });
 
 test('triaje: no se muestra nada en un correo sin señales (NFR: no dar falso "seguro")', async () => {

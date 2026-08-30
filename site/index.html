@@ -455,7 +455,13 @@ verify-your-account.eml
   var tabs = Array.prototype.slice.call(document.querySelectorAll('[role="tab"]'));
   var current = 'main';
 
-  function lang() { return root.getAttribute('data-lang'); }
+  // El idioma vive aquí, no en el atributo del documento. Leerlo de vuelta del
+  // DOM lo convertía en texto de origen desconocido que acababa componiendo el
+  // nombre del fichero de la captura, y de ahí a `src` y `href`. Además se
+  // normaliza a uno de los dos literales: lo que venga de `localStorage` o del
+  // navegador no tiene por qué ser ninguno de ellos.
+  var currentLang = 'es';
+  function lang() { return currentLang; }
 
   var darkQuery = window.matchMedia('(prefers-color-scheme: dark)');
   function theme() { return darkQuery.matches ? 'dark' : 'light'; }
@@ -471,9 +477,10 @@ verify-your-account.eml
     root.setAttribute('lang', l);
   }
 
-  function setLang(l) {
-    root.setAttribute('data-lang', l);
-    try { localStorage.setItem('msgeater-lang', l); } catch (e) { /* modo privado */ }
+  function setLang(value) {
+    currentLang = value === 'en' ? 'en' : 'es';
+    root.setAttribute('data-lang', currentLang);
+    try { localStorage.setItem('msgeater-lang', currentLang); } catch (e) { /* modo privado */ }
     render();
   }
 

@@ -138,7 +138,7 @@
   "unlink.cancel": "Cancel",
   "forensics.summary": "{n} risk signal detected",
   "forensics.summaryPlural": "{n} risk signals detected",
-  "forensics.title": "Risk signals",
+  "forensics.title": "Message analysis",
   "forensics.disclaimer": "These signals are indicators, not a verdict. The absence of more does not mean the message is safe.",
   "forensics.close": "Close",
   "forensics.sig.auth-fail": "Sender authentication failed ({detail}): the origin server is not authorised to send for that domain.",
@@ -158,5 +158,8 @@
   "forensics.hashes.loading": "Computing…",
   "forensics.hashes.empty": "No attachments.",
   "forensics.hashes.hint": "You can look these hashes up in a reputation service without uploading the file.",
-  "forensics.sig.office-macro": "The attachment “{detail}” contains macros (VBA code), a common malware delivery route. Do not run them unless you are certain of the sender."
+  "forensics.sig.office-macro": "The attachment “{detail}” contains macros (VBA code), a common malware delivery route. Do not run them unless you are certain of the sender.",
+  "actions.analysis": "Analyse the message (signals, indicators and hashes)",
+  "forensics.noSignals": "None of the signals the app checks for were detected. That does not mean the message is safe: a well-crafted malicious email may trigger none of them.",
+  "menu.analysis": "Analyse message…"
 }

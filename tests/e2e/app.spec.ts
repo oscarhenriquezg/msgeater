@@ -526,3 +526,45 @@ test('triaje: no se muestra nada en un correo sin señales (NFR: no dar falso "s
   await expect(page.locator('#header')).toBeVisible();
   await expect(page.locator('#forensics')).toBeHidden();
 });
+
+test('triaje: el panel es accesible desde la barra aunque no haya señales', async () => {
+  await launch(join(FIXTURES, 'html-basic.msg'));
+  // Sin señales no hay alerta, pero el botón de análisis debe estar disponible:
+  // los indicadores y los hashes sirven igual en un correo normal.
+  await expect(page.locator('#forensics')).toBeHidden();
+  await page.click('#btn-analysis');
+  await expect(page.locator('#forensics-dialog')).toBeVisible();
+
+  // El texto no debe declarar el correo seguro, solo que no se detectó nada.
+  await expect(page.locator('#forensics-list')).toContainText(/no.*detect|none of the signals/i);
+
+  // Y los hashes de los adjuntos se calculan igualmente.
+  await page.click('#forensics-hashes-title');
+  await expect(page.locator('.hash-row').first()).toBeVisible();
+});
+
+test('la barra de herramientas no desborda en el ancho mínimo de ventana', async () => {
+  await launch(join(FIXTURES, 'html-basic.msg'));
+  await expect(page.locator('#header')).toBeVisible();
+
+  // 640 px es el minWidth que la propia app impone (createAppWindow). Antes de
+  // permitir que la barra envuelva, a ese ancho quedaban fuera de la pantalla
+  // Exportar y Acerca de: visibles en el DOM pero inalcanzables con el ratón.
+  for (const width of [640, 800, 1100]) {
+    await app.evaluate(({ BrowserWindow }, w) =>
+      BrowserWindow.getAllWindows()[0]?.setBounds({ width: w, height: 700 }), width);
+    await page.waitForTimeout(300);
+
+    const fuera = await page.evaluate(() => {
+      const tb = document.getElementById('toolbar')!;
+      const vw = document.documentElement.clientWidth;
+      return [...tb.children]
+        .filter((c) => {
+          const r = c.getBoundingClientRect();
+          return r.right > vw + 1 || r.left < -1;
+        })
+        .map((c) => c.id || c.className);
+    });
+    expect(fuera, `elementos fuera de pantalla a ${width}px`).toEqual([]);
+  }
+});

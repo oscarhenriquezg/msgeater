@@ -119,6 +119,7 @@ también con el foco dentro del cuerpo del mensaje.
 | Acercar (zoom del cuerpo) | `Ctrl/Cmd++` |
 | Alejar | `Ctrl/Cmd+-` |
 | Tamaño real | `Ctrl/Cmd+0` |
+| Analizar el mensaje (señales, indicadores y hashes) | `Ctrl/Cmd+Shift+A` |
 | Ver código fuente del mensaje | `Ctrl/Cmd+U` |
 | Herramientas de desarrollo | `F12` (oculto en el menú) |
 
@@ -127,7 +128,7 @@ también con el foco dentro del cuerpo del mensaje.
 De izquierda a derecha: **Nuevo** (cierra el mensaje) · **Abrir** · **Guardar
 como** · **Copiar con formato** · **Buscar** · **Acercar** · **Alejar** ·
 **Oscurecer el cuerpo** (accesibilidad) · **Unlink** (deja todos los enlaces
-inertes) · **Resaltar enlaces engañosos** · **Ver código fuente** ·
+inertes) · **Resaltar enlaces engañosos** · **Analizar el mensaje** · **Ver código fuente** ·
 **Exportar** · **Acerca de**.
 
 ### Adjuntos
@@ -211,8 +212,15 @@ como `../../evil.txt` no puede escribir fuera de `attachments/`.
 
 ## 5. Señales de riesgo (triaje de phishing)
 
-Bajo los metadatos aparece un aviso —**solo si hay algo que reportar**— con el
-número de señales detectadas. Al pulsarlo se abre el detalle:
+Hay dos formas de llegar al análisis:
+
+- **El aviso automático**, que aparece bajo los metadatos **solo si hay algo
+  que reportar**, con el número de señales detectadas.
+- **El botón «Analizar el mensaje»** de la barra de herramientas (o
+  `Ctrl/Cmd+Shift+A`), disponible siempre: los indicadores y los hashes de los
+  adjuntos son útiles aunque el correo no dispare ninguna señal.
+
+En ambos casos se abre el mismo panel:
 
 - **Autenticación del remitente**: SPF, DKIM o DMARC en `fail`, `softfail` o
   error. Un `none`/`neutral` **no** se marca: significa que no se pudo
@@ -239,7 +247,9 @@ número de señales detectadas. Al pulsarlo se abre el detalle:
 > **Qué significa que no aparezca el aviso.** Solo que no se detectó ninguna
 > de las señales anteriores. **No** es un certificado de que el correo sea
 > seguro, y por eso la app no muestra ningún indicador "en verde": un análisis
-> automático no puede descartar un mensaje malicioso bien construido.
+> automático no puede descartar un mensaje malicioso bien construido. Si abres
+> el panel a mano en un correo sin señales, el texto lo dice con esas mismas
+> palabras.
 
 ## 6. Vista de código fuente (`Ctrl/Cmd+U`)
 

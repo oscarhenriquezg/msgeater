@@ -140,6 +140,7 @@ export interface MsgEaterApi {
         | { type: 'save-as' }
         | { type: 'zoom'; delta: number }
         | { type: 'source' }
+        | { type: 'analysis' }
         | { type: 'about' }
         | { type: 'associate' }
         | { type: 'copy-meta'; as: 'text' | 'json' }

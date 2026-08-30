@@ -183,6 +183,16 @@ function renderForensics(doc: MsgDocument): void {
 
 /** Lista legible de señales dentro del diálogo. */
 function renderSignalList(signals: MsgDocument['signals'] = []): void {
+  // El diálogo también se abre desde la barra en correos sin señales (para
+  // consultar indicadores y hashes), así que hay que decir algo. Se afirma
+  // solo lo comprobado —no se detectó nada— sin declararlo seguro.
+  if (signals.length === 0) {
+    const li = document.createElement('li');
+    li.className = 'signal signal-none';
+    li.textContent = t('forensics.noSignals');
+    el.forensicsList.replaceChildren(li);
+    return;
+  }
   el.forensicsList.replaceChildren(
     ...signals.map((s) => {
       const li = document.createElement('li');
@@ -1203,6 +1213,7 @@ async function init(): Promise<void> {
   iconBtn('btn-dark-body', ICONS.darkBody, t('actions.darkBody'));
   iconBtn('btn-unlink', ICONS.unlink, t('actions.unlink'));
   iconBtn('btn-link-warn', ICONS.linkWarn, t('actions.linkWarn'));
+  iconBtn('btn-analysis', ICONS.forensics, t('actions.analysis'));
   iconBtn('btn-source', ICONS.source, t('actions.source'));
   iconBtn('btn-about', `<img src="${iconToolbar}" alt="" class="brand-icon" />`, t('actions.about'));
   $('unlink-icon').innerHTML = ICONS.shield;
@@ -1331,6 +1342,10 @@ async function init(): Promise<void> {
   $('btn-about').addEventListener('click', () => openAboutDialog());
   $('btn-about-close').addEventListener('click', () => el.aboutDialog.close());
   el.btnForensics.addEventListener('click', () => void openForensicsDialog());
+  // Acceso permanente: los indicadores y los hashes de adjuntos son útiles
+  // aunque el correo no dispare ninguna señal (documentar un caso, comprobar
+  // un adjunto en un servicio de reputación por su hash).
+  $('btn-analysis').addEventListener('click', () => void openForensicsDialog());
   $('btn-forensics-close').addEventListener('click', () => el.forensicsDialog.close());
   $('about-repo').addEventListener('click', (e) => {
     e.preventDefault();
@@ -1408,6 +1423,7 @@ async function init(): Promise<void> {
     else if (action.type === 'save-as') void doSaveAs();
     else if (action.type === 'zoom') changeBodyZoom(action.delta);
     else if (action.type === 'source') api.viewSource();
+    else if (action.type === 'analysis') void openForensicsDialog();
     else if (action.type === 'about') openAboutDialog();
     else if (action.type === 'associate') openAssociateDialog();
     else if (action.type === 'copy-meta') copyMetadata(action.as);

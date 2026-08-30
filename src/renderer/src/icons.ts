@@ -13,6 +13,7 @@ import shieldAlert from 'lucide-static/icons/shield-alert.svg?raw';
 import shieldCheck from 'lucide-static/icons/shield-check.svg?raw';
 import squareCode from 'lucide-static/icons/square-code.svg?raw';
 import squareArrowUpRight from 'lucide-static/icons/square-arrow-up-right.svg?raw';
+import scanSearch from 'lucide-static/icons/scan-search.svg?raw';
 import unlink from 'lucide-static/icons/unlink.svg?raw';
 import zoomIn from 'lucide-static/icons/zoom-in.svg?raw';
 import zoomOut from 'lucide-static/icons/zoom-out.svg?raw';
@@ -28,6 +29,7 @@ export const ICONS = {
   zoomOut,
   darkBody: contrast,
   unlink,
+  forensics: scanSearch,
   shield: shieldCheck,
   shieldAlert,
   linkWarn: link2Off,

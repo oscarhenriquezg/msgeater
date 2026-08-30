@@ -50,15 +50,43 @@ function ascii(text: string): Uint8Array {
   return Uint8Array.from(text, (c) => c.charCodeAt(0) & 0xff);
 }
 
-/** UTF-16LE, que es como el directorio de un CFBF guarda los nombres de stream. */
-function utf16le(text: string): Uint8Array {
-  const out = new Uint8Array(text.length * 2);
-  for (let i = 0; i < text.length; i++) {
-    const code = text.charCodeAt(i);
-    out[i * 2] = code & 0xff;
-    out[i * 2 + 1] = (code >> 8) & 0xff;
+/** Nombres de entrada de directorio que delatan un proyecto VBA. */
+const VBA_ENTRY_NAMES = new Set(['_vba_project', 'macros', '_vba_project_cur', 'vba']);
+
+/** Tamaño de una entrada del directorio CFBF, según la especificación. */
+const DIR_ENTRY_SIZE = 128;
+
+/**
+ * ¿Hay una entrada de *directorio* CFBF con nombre de proyecto VBA?
+ *
+ * Deliberadamente NO se busca la cadena suelta por todo el archivo: un
+ * documento perfectamente inocuo que hable de macros llevaría la palabra
+ * "Macros" en su texto y produciría un falso positivo — y esta señal es de
+ * severidad alta y le dice al usuario que el adjunto contiene macros.
+ *
+ * En vez de eso se recorre el archivo en posiciones alineadas a 128 bytes (el
+ * tamaño de una entrada de directorio) y se valida la estructura: longitud de
+ * nombre coherente, tipo de objeto válido (storage/stream/root) y nombre
+ * exacto. No es un parser CFBF completo —no se sigue la cadena FAT— pero
+ * exige que los bytes parezcan de verdad una entrada de directorio.
+ */
+function hasVbaDirectoryEntry(bytes: Uint8Array): boolean {
+  for (let off = 0; off + DIR_ENTRY_SIZE <= bytes.length; off += DIR_ENTRY_SIZE) {
+    // uint16 LE: longitud del nombre en bytes, incluido el terminador nulo.
+    const nameLen = bytes[off + 64]! | (bytes[off + 65]! << 8);
+    if (nameLen < 4 || nameLen > 64 || nameLen % 2 !== 0) continue;
+
+    // 0x01 storage, 0x02 stream, 0x05 root. Cualquier otro no es una entrada.
+    const objectType = bytes[off + 66]!;
+    if (objectType !== 0x01 && objectType !== 0x02 && objectType !== 0x05) continue;
+
+    let name = '';
+    for (let i = 0; i < nameLen - 2; i += 2) {
+      name += String.fromCharCode(bytes[off + i]! | (bytes[off + i + 1]! << 8));
+    }
+    if (VBA_ENTRY_NAMES.has(name.toLowerCase())) return true;
   }
-  return out;
+  return false;
 }
 
 /**
@@ -66,8 +94,9 @@ function utf16le(text: string): Uint8Array {
  *
  * - **OOXML** (`.docx`/`.xlsm`/…): es un ZIP y los nombres de sus entradas van
  *   en claro en el archivo, así que basta con encontrar `vbaProject.bin`.
- * - **OLE/CFBF** (`.doc`/`.xls` antiguos): el directorio guarda los nombres de
- *   stream en UTF-16LE; un proyecto VBA aparece como `_VBA_PROJECT` o `Macros`.
+ * - **OLE/CFBF** (`.doc`/`.xls` antiguos): se busca una entrada de directorio
+ *   llamada `_VBA_PROJECT` o `Macros`, validando la estructura (ver
+ *   `hasVbaDirectoryEntry`) para no confundirla con el texto del documento.
  *
  * Es una heurística sobre bytes, no un análisis del documento: puede haber
  * falsos negativos si el archivo está cifrado o comprimido de forma que oculte
@@ -77,12 +106,12 @@ export function hasOfficeMacros(bytes: Uint8Array, extension: string): boolean {
   if (!isOfficeAttachment(extension) || bytes.length === 0) return false;
 
   if (startsWith(bytes, ZIP_MAGIC)) {
+    // En un ZIP los nombres de entrada van en claro en las cabeceras, y
+    // "vbaProject.bin" no es texto que aparezca por casualidad.
     return includesBytes(bytes, ascii('vbaProject.bin'));
   }
   if (startsWith(bytes, CFBF_MAGIC)) {
-    return (
-      includesBytes(bytes, utf16le('_VBA_PROJECT')) || includesBytes(bytes, utf16le('Macros'))
-    );
+    return hasVbaDirectoryEntry(bytes);
   }
   return false;
 }

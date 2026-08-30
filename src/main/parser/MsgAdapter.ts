@@ -341,6 +341,10 @@ export class MsgAdapter {
       const contentId = a.pidContentId?.replace(/^<|>$/g, '');
       const referenced =
         contentId !== undefined && contentId !== '' && bodyHtml.includes(`cid:${contentId}`);
+      // La primera de las dos que sea ofimática decide si merece inspección.
+      const officeExt = [extension, extOf(fileName).toLowerCase()].find((e) =>
+        isOfficeAttachment(e)
+      );
       return {
         id: index,
         fileName,
@@ -352,7 +356,12 @@ export class MsgAdapter {
         // Solo se leen los bytes de los adjuntos ofimáticos (en un correo
         // normal, ninguno) y el reader ya está abierto aquí, así que no
         // supone un parseo extra del mensaje.
-        hasMacros: isOfficeAttachment(extension) ? this.detectMacros(a, extension) : undefined
+        //
+        // Se mira tanto la extensión declarada (PidTagAttachExtension) como la
+        // del nombre visible: ambas las controla quien envía, y si discrepan
+        // —un `invoice.docm` con la propiedad vacía o puesta a `.txt`— saltarse
+        // la comprobación sería justo lo que buscaría un atacante.
+        hasMacros: officeExt ? this.detectMacros(a, officeExt) : undefined
       };
     });
   }

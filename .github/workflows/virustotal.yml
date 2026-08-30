@@ -96,15 +96,24 @@ jobs:
             total=$(echo "$stats_json" | jq -r '[.[]] | add')
             echo "| ${name} | \`${sha}\` | ${malicious} malicious / ${suspicious} suspicious de ${total} motores | [ver informe](https://www.virustotal.com/gui/file/${sha}) |" >> "$summary"
 
-            # Para el resumen del README se conserva el PEOR resultado de todos
-            # los artefactos, no el más favorable: si un instalable diera una
-            # detección, el README no debe seguir anunciando "0".
-            [ "$malicious"  -gt "${WORST_MALICIOUS:-0}"  ] && WORST_MALICIOUS=$malicious
-            [ "$suspicious" -gt "${WORST_SUSPICIOUS:-0}" ] && WORST_SUSPICIOUS=$suspicious
-            ENGINES=$total
-            # El enlace del README apunta al AppImage (el artefacto Linux
-            # genérico, el más descargado).
-            case "$name" in *.AppImage) LINK_SHA=$sha ;; esac
+            # Para el resumen del README se elige UN artefacto: el peor. Sus
+            # tres cifras y su hash viajan juntos, porque mezclarlos entre
+            # archivos produciría una fila que anuncia un recuento que no
+            # corresponde al informe enlazado. El AppImage sirve de referencia
+            # inicial (es el descargable genérico de Linux) y solo lo desbanca
+            # otro artefacto si tiene más detecciones.
+            score=$(( malicious * 1000 + suspicious ))
+            if [ -z "${WORST_SHA:-}" ] || [ "$score" -gt "${WORST_SCORE:-0}" ] \
+               || { [ "$score" -eq "${WORST_SCORE:-0}" ] && [ "${name##*.}" = "AppImage" ] \
+                    && [ "${WORST_IS_APPIMAGE:-0}" = "0" ]; }; then
+              WORST_SCORE=$score
+              WORST_MALICIOUS=$malicious
+              WORST_SUSPICIOUS=$suspicious
+              WORST_ENGINES=$total
+              WORST_SHA=$sha
+              WORST_NAME=$name
+              [ "${name##*.}" = "AppImage" ] && WORST_IS_APPIMAGE=1 || WORST_IS_APPIMAGE=0
+            fi
           done
 
           cat "$summary" >> "$GITHUB_STEP_SUMMARY"
@@ -112,8 +121,9 @@ jobs:
           {
             echo "worst_malicious=${WORST_MALICIOUS:-0}"
             echo "worst_suspicious=${WORST_SUSPICIOUS:-0}"
-            echo "engines=${ENGINES:-0}"
-            echo "link_sha=${LINK_SHA:-}"
+            echo "engines=${WORST_ENGINES:-0}"
+            echo "link_sha=${WORST_SHA:-}"
+            echo "worst_name=${WORST_NAME:-}"
             echo "version=${TAG#v}"
           } >> "$GITHUB_OUTPUT"
         id: scan

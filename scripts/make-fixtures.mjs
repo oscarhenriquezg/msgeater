@@ -194,7 +194,12 @@ writeFileSync(join(outDir, 'office-macros.msg'), buildMsg({
       content: buildOleDoc(['Workbook', '_VBA_PROJECT']) },
     // .docx equivalente SIN macros → no debe marcarse (control del falso positivo)
     { fileName: 'anexo.docx', extension: '.docx',
-      content: buildOoxml(['word/document.xml', 'word/styles.xml']) }
+      content: buildOoxml(['word/document.xml', 'word/styles.xml']) },
+    // Extensión declarada mentirosa: PidTagAttachExtension dice ".txt" pero el
+    // nombre visible es .docm. La propiedad MAPI la controla quien envía, así
+    // que la detección no puede fiarse solo de ella.
+    { fileName: 'nomina.docm', extension: '.txt',
+      content: buildOoxml(['word/document.xml', 'word/vbaProject.bin']) }
   ]
 }));
 

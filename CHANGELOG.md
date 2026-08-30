@@ -6,6 +6,28 @@ Todos los cambios notables de este proyecto se documentan en este archivo.
 
 ### Añadido
 
+- **Analizador de línea de comandos** (`out/main/cli.js`): el mismo análisis
+  que muestra el panel de la aplicación —señales, ruta de entrega, indicadores
+  y SHA-256 de los adjuntos— sin abrir ventana, con salida de texto o `--json`.
+  Abrir los correos de uno en uno no sirve para revisar un buzón entero.
+  - **No usa Electron ni necesita servidor gráfico**: funciona por SSH, en un
+    contenedor o desde un cron, con `node` o con el binario de la app en modo
+    Node (`ELECTRON_RUN_AS_NODE=1`).
+  - Códigos de salida pensados para scripts: `0` no se detectó ninguna señal,
+    `1` se detectó alguna, `2` algún archivo no se pudo analizar. `0` significa
+    exactamente eso, **no** que el correo sea seguro.
+  - Acepta varios archivos; uno ilegible se reporta por `stderr` sin abortar
+    el análisis de los demás.
+  - **No imprime el cuerpo del mensaje**: la salida es el análisis, no el
+    contenido, que puede ser privado y acabaría en logs y tuberías sin que
+    nadie lo haya pedido. Tampoco toca la red.
+  - **Neutraliza las secuencias de escape ANSI** del asunto y de los nombres
+    de adjunto. Se cuelan codificadas en RFC 2047 —la cabecera cruda parece
+    ASCII inofensivo— y en un terminal mueven el cursor y borran líneas: un
+    correo hostil podía tapar las señales que lo delatan dentro de la propia
+    salida del análisis.
+  - Los textos salen de los mismos ficheros de i18n que la ventana, para que
+    no acaben diciendo cosas distintas de la misma señal.
 - **Ruta de entrega en el panel de análisis.** La cadena `Received` —los
   servidores por los que pasó el correo— se muestra como una línea de tiempo
   legible, del origen declarado a la entrega final, con la IP de cada salto

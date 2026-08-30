@@ -10,7 +10,7 @@ release, [`VERIFY-RELEASE.md`](VERIFY-RELEASE.md).
 
 MsgEater es una aplicación de escritorio (Electron). No expone una API de red
 ni un modo servidor: toda su interfaz externa son los archivos que abre, los
-que escribe y su ventana.
+que escribe, su ventana y el analizador de línea de comandos (§1.1).
 
 ### Desde la línea de comandos
 
@@ -39,6 +39,78 @@ open -a MsgEater correo.msg
 - **Códigos de salida**: la aplicación no define códigos propios. Sale con `0`
   al cerrarse normalmente. Un archivo ilegible o no soportado **no** provoca
   una salida con error: se muestra el error dentro de la ventana.
+
+## 1.1 Analizador de línea de comandos (sin ventana)
+
+Abrir los correos de uno en uno no sirve para revisar un buzón entero, así que
+el mismo análisis que muestra el panel de la aplicación está disponible como
+programa de consola. **No usa Electron ni necesita servidor gráfico**: funciona
+por SSH, en un contenedor o desde un cron.
+
+```bash
+# Desde el repositorio
+npm run build
+npm run analyze -- correo.eml
+
+# Desde una instalación .deb/.rpm, sin DISPLAY: el binario de la app admite
+# ejecutarse como Node a secas, así que no arranca Chromium ni pide pantalla.
+ELECTRON_RUN_AS_NODE=1 msgeater /opt/MsgEater/resources/app/out/main/cli.js correo.eml
+```
+
+> Todavía **no** se instala un lanzador corto (`msgeater-analyze`) junto al
+> paquete; hay que invocarlo con la ruta completa como arriba. Un alias
+> resuelve el día a día:
+>
+> ```bash
+> alias msgeater-analyze='ELECTRON_RUN_AS_NODE=1 msgeater /opt/MsgEater/resources/app/out/main/cli.js'
+> ```
+
+| Opción | Efecto |
+| --- | --- |
+| `--json` | Salida en JSON: un array con el análisis de cada archivo |
+| `-h`, `--help` | Ayuda y códigos de salida |
+
+Para encadenar la salida con otra herramienta hay que usar `npm run --silent`
+(sin él, npm imprime su propia cabecera en `stdout` y el JSON deja de ser
+analizable) o llamar directamente a `node out/main/cli.js`.
+
+Acepta varios archivos. Uno ilegible no aborta los demás: se informa por
+`stderr` y el resto se analiza igual.
+
+### Códigos de salida
+
+| Código | Significado |
+| --- | --- |
+| `0` | No se detectó **ninguna** de las señales que se comprueban |
+| `1` | Se detectó al menos una señal |
+| `2` | Algún archivo no se pudo analizar |
+
+> `0` significa exactamente eso: ninguna de las señales comprobadas. **No**
+> significa que el correo sea seguro — ver la nota al final de §5.
+
+```bash
+# Todos los .eml de un directorio que disparen alguna señal
+for f in *.eml; do
+  node out/main/cli.js "$f" >/dev/null || echo "revisar: $f"
+done
+
+# Los hashes de los adjuntos con macros, para consultarlos en un servicio de
+# reputación por hash, sin subir el archivo
+node out/main/cli.js --json *.msg |
+  jq -r '.[].attachments[] | select(.hasMacros) | "\(.sha256)  \(.fileName)"'
+```
+
+### Qué no hace
+
+- **No imprime el cuerpo del mensaje.** La salida es el análisis, no el
+  contenido: este puede ser privado y acabaría en logs y tuberías sin que
+  nadie lo haya pedido.
+- **No toca la red** (NFR-03), igual que la interfaz gráfica.
+- **Neutraliza las secuencias de escape ANSI** del asunto y de los nombres de
+  adjunto antes de escribirlos. Se cuelan codificadas en RFC 2047 —la cabecera
+  cruda parece ASCII inofensivo— y en un terminal mueven el cursor y borran
+  líneas, con lo que un correo hostil podría tapar las señales que lo delatan
+  dentro de la propia salida del análisis.
 
 ### Otras formas de abrir
 

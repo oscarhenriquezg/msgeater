@@ -11,7 +11,10 @@ export default defineConfig({
       rollupOptions: {
         input: {
           index: resolve('src/main/index.ts'),
-          'parser/worker': resolve('src/main/parser/worker.ts')
+          'parser/worker': resolve('src/main/parser/worker.ts'),
+          // CLI de análisis: Node puro, sin importar `electron`, para poder
+          // ejecutarlo sin servidor gráfico (ver src/main/cli.ts).
+          cli: resolve('src/main/cli.ts')
         }
       }
     }

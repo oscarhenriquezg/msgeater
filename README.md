@@ -85,6 +85,7 @@ equipo.
 | **Unlink** | Un botón deja todos los enlaces inertes (tachados) para inspeccionar correos sospechosos sin riesgo |
 | **Macros ofimáticas** | Detecta si un `.docm`/`.xls`/… trae un proyecto VBA, sin abrirlo ni ejecutarlo |
 | **Ruta de entrega** | La cadena `Received` como línea de tiempo legible (origen, saltos, IPs y demoras), con el aviso de que los primeros saltos los puede inventar quien envía |
+| **Análisis por consola** | El mismo análisis sin abrir ventana y sin servidor gráfico (`--json` para encadenarlo): revisar un buzón entero no se hace correo a correo. [Guía](docs/USER-GUIDE.md#11-analizador-de-línea-de-comandos-sin-ventana) |
 | **Adjuntos bajo control** | Solo se escriben a disco por acción explícita; los temporales de "Abrir" se purgan al salir |
 
 ### 🛠️ Acciones y exportación

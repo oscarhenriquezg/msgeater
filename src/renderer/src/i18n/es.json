@@ -169,5 +169,19 @@
   "forensics.sig.office-macro": "El adjunto «{detail}» contiene macros (código VBA), una vía habitual de entrega de malware. No las ejecutes salvo que sepas con certeza de quién viene.",
   "actions.analysis": "Analizar el mensaje (señales, indicadores y hashes)",
   "forensics.noSignals": "No se detectó ninguna de las señales que la aplicación comprueba. Eso no significa que el correo sea seguro: un mensaje malicioso bien construido puede no dispararlas.",
-  "menu.analysis": "Analizar el mensaje…"
+  "menu.analysis": "Analizar el mensaje…",
+  "cli.tagline": "análisis de correos desde la línea de comandos, sin abrir ventana",
+  "cli.subject": "Asunto",
+  "cli.from": "De",
+  "cli.sent": "Enviado",
+  "cli.signals": "Señales de riesgo",
+  "cli.severity.high": "alta",
+  "cli.severity.medium": "media",
+  "cli.attachments": "Adjuntos",
+  "cli.flag.executable": "[puede ejecutar código]",
+  "cli.flag.macros": "[macros]",
+  "cli.help.json": "salida en JSON, para encadenar con otras herramientas",
+  "cli.help.help": "muestra esta ayuda",
+  "cli.help.exit": "  Códigos de salida: 0 no se detectó ninguna señal · 1 se detectó alguna · 2 no se pudo analizar.",
+  "cli.help.disclaimer": "  Salir con 0 significa que no se detectó ninguna de las señales que se comprueban.\n  NO significa que el correo sea seguro. No se envía nada por la red ni se imprime\n  el cuerpo del mensaje: solo el análisis."
 }

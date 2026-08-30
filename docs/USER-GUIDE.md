@@ -45,7 +45,7 @@ open -a MsgEater correo.msg
 - **Diálogo Abrir** (`Ctrl/Cmd+O`), con filtro `.msg`, `.eml`, `.emlx`.
 - **Arrastrar y soltar** un archivo sobre la ventana.
 - **Doble clic en el gestor de archivos**, si se han asociado los tipos
-  (ver §6).
+  (ver §7).
 
 ## 2. Formatos de entrada
 
@@ -209,7 +209,34 @@ attachments/
 Los nombres de los adjuntos se sanean antes de escribirse: un nombre malicioso
 como `../../evil.txt` no puede escribir fuera de `attachments/`.
 
-## 5. Vista de código fuente (`Ctrl/Cmd+U`)
+## 5. Señales de riesgo (triaje de phishing)
+
+Bajo los metadatos aparece un aviso —**solo si hay algo que reportar**— con el
+número de señales detectadas. Al pulsarlo se abre el detalle:
+
+- **Autenticación del remitente**: SPF, DKIM o DMARC en `fail`, `softfail` o
+  error. Un `none`/`neutral` **no** se marca: significa que no se pudo
+  comprobar, no que fallara.
+- **Suplantación de dirección**: el dominio de `From` no coincide con el de
+  `Return-Path` (ruta de retorno) o el `Reply-To` desvía la respuesta a otro
+  dominio. Los subdominios de la misma organización no se marcan, porque los
+  boletines y listas legítimos los usan de forma habitual.
+- **Adjuntos ejecutables**: archivos que pueden ejecutar código.
+- **Enlaces**: dominios con homografía IDN (caracteres de otro alfabeto que
+  imitan al latino) y acortadores de URL, cuyo destino real no es visible.
+- **Indicadores del mensaje**: URLs, dominios, IPs y direcciones extraídos y
+  deduplicados, con botón de copiar por grupo — para reportar un phishing sin
+  recopilarlos a mano.
+- **SHA-256 de los adjuntos**: calculado bajo demanda al abrir el detalle.
+  Permite consultar un archivo en un servicio de reputación **buscando por
+  hash, sin subirlo**: el contenido del correo no sale del equipo.
+
+> **Qué significa que no aparezca el aviso.** Solo que no se detectó ninguna
+> de las señales anteriores. **No** es un certificado de que el correo sea
+> seguro, y por eso la app no muestra ningún indicador "en verde": un análisis
+> automático no puede descartar un mensaje malicioso bien construido.
+
+## 6. Vista de código fuente (`Ctrl/Cmd+U`)
 
 Ventana aparte, orientada a análisis forense del mensaje:
 
@@ -223,7 +250,7 @@ Ventana aparte, orientada a análisis forense del mensaje:
 
 Exportable a PDF, HTML o TXT, e imprimible.
 
-## 6. Asociación con el sistema operativo
+## 7. Asociación con el sistema operativo
 
 *Archivo → Asociar tipos de archivo…* abre un diálogo para elegir cuáles de los
 tres tipos (`.msg`, `.eml`, `.emlx`) debe abrir MsgEater al hacer doble clic.
@@ -237,7 +264,7 @@ tres tipos (`.msg`, `.eml`, `.emlx`) debe abrir MsgEater al hacer doble clic.
 La app ofrece esta asociación una vez al inicio si detecta que no está hecha;
 puede desestimarse permanentemente.
 
-## 7. Red y privacidad
+## 8. Red y privacidad
 
 MsgEater no realiza ninguna conexión saliente por sí misma: no hay telemetría,
 ni actualizaciones automáticas, ni carga de recursos remotos del mensaje. La

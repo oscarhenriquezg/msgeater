@@ -519,3 +519,72 @@ dialog p { font-size: 13.5px; }
 @keyframes toast-out {
   to { opacity: 0; transform: scale(0.97); }
 }
+
+/* ---------- Triaje de phishing (señales de riesgo) ---------- */
+/* Solo se pinta cuando hay señales: la ausencia no se anuncia como "seguro". */
+.forensics { margin-top: 10px; }
+.forensics-summary {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--warn-border, var(--border));
+  background: var(--warn-bg, var(--chip-bg));
+  color: var(--warn-text, var(--text));
+  font: inherit;
+  font-weight: 600;
+  font-size: 12.5px;
+  cursor: pointer;
+}
+.forensics-summary:hover { filter: brightness(0.97); }
+.forensics-summary svg { width: 16px; height: 16px; }
+/* Amarillo para indicios, rojo para lo que casi nunca es legítimo. */
+#forensics[data-severity='medium'] {
+  --warn-bg: #fff6e0; --warn-border: #e0b44a; --warn-text: #6b4c00;
+}
+#forensics[data-severity='high'] {
+  --warn-bg: #fdeceb; --warn-border: var(--danger); --warn-text: var(--danger);
+}
+@media (prefers-color-scheme: dark) {
+  #forensics[data-severity='medium'] {
+    --warn-bg: #3a3021; --warn-border: #9c7d2e; --warn-text: #f0cf85;
+  }
+  #forensics[data-severity='high'] {
+    --warn-bg: #3d2523; --warn-border: #d9534f; --warn-text: #ffb4ab;
+  }
+}
+
+.forensics-dialog { max-width: 640px; }
+.forensics-list { margin: 12px 0; padding-left: 0; list-style: none; }
+.forensics-list .signal {
+  padding: 8px 10px;
+  margin-bottom: 6px;
+  border-radius: 6px;
+  border-left: 3px solid var(--border);
+  background: var(--chip-bg);
+  font-size: 13px;
+  line-height: 1.45;
+}
+.forensics-list .signal-high { border-left-color: var(--danger); }
+.forensics-list .signal-medium { border-left-color: #e0b44a; }
+
+.forensics-dialog details { margin-top: 10px; }
+.forensics-dialog summary { cursor: pointer; font-weight: 600; font-size: 13px; }
+.ioc-group { margin: 10px 0; }
+.ioc-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.ioc-values {
+  margin: 6px 0 0;
+  padding: 8px;
+  max-height: 140px;
+  overflow: auto;
+  background: var(--chip-bg);
+  border-radius: 6px;
+  font-size: 12px;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+.btn.small { padding: 3px 8px; font-size: 12px; }
+.hash-row { display: flex; flex-direction: column; gap: 2px; margin: 8px 0; }
+.hash-name { font-size: 12.5px; font-weight: 600; }
+.hash-value { font-size: 11.5px; word-break: break-all; color: var(--text-muted); }

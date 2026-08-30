@@ -48,6 +48,14 @@
       <div id="attachments" class="attachments" hidden>
         <div class="attachment-row" id="attachment-row" role="list"></div>
       </div>
+      <!-- Triaje: solo se muestra si hay señales que reportar. La ausencia de
+           señales NO se anuncia como "seguro" (ver shared/forensics.ts). -->
+      <section id="forensics" class="forensics" hidden>
+        <button id="btn-forensics" class="forensics-summary" type="button">
+          <span id="forensics-icon" aria-hidden="true"></span>
+          <span id="forensics-text"></span>
+        </button>
+      </section>
     </header>
 
     <!-- FR-04: estado vacío con drag & drop -->
@@ -140,6 +148,24 @@
     </dialog>
 
     <!-- Confirmación de Unlink (seguridad) -->
+    <dialog id="forensics-dialog" class="forensics-dialog">
+      <div class="dialog-icon" id="forensics-dialog-icon" aria-hidden="true"></div>
+      <h3 id="forensics-title"></h3>
+      <p id="forensics-disclaimer" class="muted"></p>
+      <ul id="forensics-list" class="forensics-list"></ul>
+      <details id="forensics-iocs-box">
+        <summary id="forensics-iocs-title"></summary>
+        <div class="ioc-groups" id="forensics-iocs"></div>
+      </details>
+      <details id="forensics-hashes-box">
+        <summary id="forensics-hashes-title"></summary>
+        <div id="forensics-hashes"></div>
+      </details>
+      <div class="dialog-actions">
+        <button id="btn-forensics-close" class="btn primary"></button>
+      </div>
+    </dialog>
+
     <dialog id="unlink-dialog">
       <div class="dialog-icon" id="unlink-icon" aria-hidden="true"></div>
       <h3 id="unlink-title"></h3>

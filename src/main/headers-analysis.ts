@@ -1,8 +1,13 @@
 /**
  * Análisis técnico de cabeceras de transporte: cadena Received (el "viaje"
- * del correo, con demoras entre saltos) y resultados de autenticación
- * (SPF / DKIM / DMARC / ARC).
+ * del correo, con demoras entre saltos), resultados de autenticación
+ * (SPF / DKIM / DMARC / ARC), dominios de las cabeceras de dirección y
+ * extracción de indicadores (IOCs).
  */
+
+import type { Iocs } from '@shared/types';
+
+export type { Iocs };
 
 export interface Hop {
   from: string;
@@ -56,6 +61,140 @@ export function parseReceivedChain(headers: string): Hop[] {
     }
   }
   return hops;
+}
+
+/** Dominios de las cabeceras de dirección relevantes para detectar suplantación. */
+export interface AddressHeaders {
+  from?: string;
+  returnPath?: string;
+  replyTo?: string;
+  sender?: string;
+}
+
+/** Primer valor de una cabecera (sin distinguir mayúsculas), ya desplegada. */
+function headerValue(lines: string[], name: string): string | undefined {
+  const prefix = `${name.toLowerCase()}:`;
+  const line = lines.find((l) => l.toLowerCase().startsWith(prefix));
+  return line?.slice(prefix.length).trim() || undefined;
+}
+
+/**
+ * Dominio de una cabecera de dirección. Acepta las dos formas de RFC 5322
+ * (`Nombre <buzon@dominio>` y `buzon@dominio` a secas) y el `<>` del
+ * Return-Path de los rebotes, que no tiene dominio.
+ */
+export function domainOf(headerValueRaw: string | undefined): string | undefined {
+  if (!headerValueRaw) return undefined;
+  const angle = headerValueRaw.match(/<([^>]*)>/);
+  const addr = (angle ? angle[1]! : headerValueRaw).trim();
+  const at = addr.lastIndexOf('@');
+  if (at < 0) return undefined;
+  const domain = addr.slice(at + 1).trim().toLowerCase().replace(/[>;,\s].*$/, '');
+  return domain || undefined;
+}
+
+/** Dominios de From / Return-Path / Reply-To / Sender. */
+export function parseAddressHeaders(headers: string): AddressHeaders {
+  const lines = unfold(headers).split(/\r?\n/);
+  return {
+    from: domainOf(headerValue(lines, 'from')),
+    returnPath: domainOf(headerValue(lines, 'return-path')),
+    replyTo: domainOf(headerValue(lines, 'reply-to')),
+    sender: domainOf(headerValue(lines, 'sender'))
+  };
+}
+
+/**
+ * Sufijos públicos de dos niveles bajo los que cualquiera puede registrar.
+ *
+ * Sin esta lista, quedarse con las dos últimas etiquetas hace que
+ * `bank.co.uk` y `attacker.co.uk` se reduzcan ambos a `co.uk` y se traten como
+ * la misma organización — es decir, se SUPRIMIRÍA la señal justo en un caso de
+ * suplantación real. Con la lista, el dominio registrable de `bank.co.uk` es
+ * el propio `bank.co.uk`.
+ *
+ * No es la Public Suffix List completa (son miles de entradas y exigiría una
+ * dependencia nueva); cubre los sufijos de uso masivo. Ante un sufijo no
+ * listado el resultado es el comportamiento anterior, que puede generar un
+ * falso negativo: por eso, si alguna vez hay que ampliar, el criterio es
+ * añadir sufijos, nunca quitar.
+ */
+const MULTI_LABEL_SUFFIXES = new Set([
+  'co.uk', 'org.uk', 'ac.uk', 'gov.uk', 'me.uk', 'net.uk', 'sch.uk',
+  'com.au', 'net.au', 'org.au', 'edu.au', 'gov.au', 'id.au',
+  'co.nz', 'net.nz', 'org.nz', 'govt.nz', 'ac.nz',
+  'com.br', 'net.br', 'org.br', 'gov.br', 'edu.br',
+  'com.ar', 'com.mx', 'com.co', 'com.pe', 'com.uy', 'com.ve', 'com.ec',
+  'co.jp', 'ne.jp', 'or.jp', 'ac.jp', 'go.jp',
+  'co.kr', 'or.kr', 'go.kr',
+  'com.cn', 'net.cn', 'org.cn', 'gov.cn', 'edu.cn',
+  'co.in', 'net.in', 'org.in', 'gov.in', 'ac.in',
+  'co.za', 'org.za', 'gov.za',
+  'com.tr', 'com.sg', 'com.hk', 'com.tw', 'com.my', 'com.ph', 'com.vn',
+  'com.es', 'com.pl', 'com.ua', 'co.il', 'com.sa', 'com.eg', 'com.ng'
+]);
+
+/**
+ * Dominio registrable: la etiqueta que alguien registra, más su sufijo. Para
+ * `mail.empresa.com` es `empresa.com`; para `mail.bank.co.uk`, `bank.co.uk`.
+ */
+export function registrableDomain(domain: string): string {
+  const labels = domain.toLowerCase().split('.').filter(Boolean);
+  if (labels.length <= 2) return labels.join('.');
+  const lastTwo = labels.slice(-2).join('.');
+  // Sufijo de dos niveles → hace falta una etiqueta más para llegar al
+  // dominio que de verdad se registró.
+  return MULTI_LABEL_SUFFIXES.has(lastTwo) ? labels.slice(-3).join('.') : lastTwo;
+}
+
+/**
+ * ¿Dos dominios pertenecen a la misma organización? Comparación deliberadamente
+ * laxa por el dominio registrable: así `mail.empresa.com` y `empresa.com` no se
+ * marcan como discrepancia, que sería ruido en correo corporativo normal.
+ */
+export function sameOrganization(a: string, b: string): boolean {
+  if (a === b) return true;
+  return registrableDomain(a) === registrableDomain(b);
+}
+
+const URL_RE = /\bhttps?:\/\/[^\s<>"')\]]+/gi;
+const EMAIL_RE = /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b/g;
+// IPv4 con octetos válidos (evita marcar versiones tipo "1.2.3.4" de un user-agent
+// solo cuando exceden 255, que es lo máximo que se puede filtrar sin contexto).
+const IPV4_RE = /\b(?:(?:25[0-5]|2[0-4]\d|1?\d?\d)\.){3}(?:25[0-5]|2[0-4]\d|1?\d?\d)\b/g;
+
+/** Ordena y deduplica sin distinguir mayúsculas. */
+function uniqSorted(values: string[]): string[] {
+  return [...new Set(values.map((v) => v.trim()).filter(Boolean))].sort((a, b) =>
+    a.localeCompare(b)
+  );
+}
+
+/**
+ * Extrae URLs, dominios, IPs y direcciones del mensaje, para reportar un
+ * phishing sin tener que recopilarlos a mano. Trabaja sobre texto ya extraído:
+ * no interpreta HTML ni hace ninguna petición de red.
+ */
+export function extractIocs(headers: string, bodyText: string): Iocs {
+  const haystack = `${headers}\n${bodyText}`;
+  const urls = uniqSorted(haystack.match(URL_RE) ?? []);
+  const domains = uniqSorted(
+    urls
+      .map((u) => {
+        try {
+          return new URL(u).hostname.toLowerCase();
+        } catch {
+          return '';
+        }
+      })
+      .filter(Boolean)
+  );
+  return {
+    urls,
+    domains,
+    ips: uniqSorted(haystack.match(IPV4_RE) ?? []),
+    emails: uniqSorted((haystack.match(EMAIL_RE) ?? []).map((e) => e.toLowerCase()))
+  };
 }
 
 /** Resultados SPF/DKIM/DMARC/ARC de Authentication-Results y Received-SPF. */

@@ -505,3 +505,24 @@ test('asociar desde el ofrecimiento registra los tres tipos de correo', async ()
     .poll(() => app.evaluate(() => (globalThis as { __assoc?: string[] }).__assoc))
     .toEqual(['msg', 'eml', 'emlx']);
 });
+
+test('triaje: el aviso de señales aparece solo en el correo sospechoso', async () => {
+  await launch(join(FIXTURES, 'spoofed.eml'));
+  await expect(page.locator('#forensics')).toBeVisible();
+  await page.click('#btn-forensics');
+  await expect(page.locator('#forensics-dialog')).toBeVisible();
+  // Al menos las señales de autenticación, suplantación y enlaces.
+  expect(await page.locator('#forensics-list li').count()).toBeGreaterThanOrEqual(4);
+
+  // Los indicadores se cargan bajo demanda al abrir el diálogo; vienen en una
+  // sección plegada, así que se despliega como haría el usuario.
+  await page.click('#forensics-iocs-title');
+  await expect(page.locator('.ioc-group').first()).toBeVisible();
+  await expect(page.locator('#forensics-iocs')).toContainText('bit.ly');
+});
+
+test('triaje: no se muestra nada en un correo sin señales (NFR: no dar falso "seguro")', async () => {
+  await launch(join(FIXTURES, 'legit-bounce.eml'));
+  await expect(page.locator('#header')).toBeVisible();
+  await expect(page.locator('#forensics')).toBeHidden();
+});

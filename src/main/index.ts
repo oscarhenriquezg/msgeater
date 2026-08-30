@@ -10,7 +10,8 @@ import type {
   ExportResult,
   LoadResult,
   MsgDocument,
-  RemoteImageResult
+  RemoteImageResult,
+  Iocs
 } from '@shared/types';
 import { MAX_PNG_HEIGHT } from '@shared/types';
 import { isExecutableAttachment } from '@shared/executable';
@@ -36,10 +37,11 @@ import {
   setAssocPromptDismissed
 } from './associate';
 import { MAX_EMBEDDED_DEPTH } from './parser/limits';
-import { getAnyAttachment, isCfbf } from './parser/AnyMessage';
+import { getAllAttachmentHashes, getAnyAttachment, isCfbf } from './parser/AnyMessage';
 import { MsgAdapter } from './parser/MsgAdapter';
 import { addRecent, clearRecents, existingRecents } from './recents';
 import { parseAuthResults, parseReceivedChain } from './headers-analysis';
+import { documentIocs } from './forensic-analysis';
 import { sanitizeWithReport } from './parser/sanitize';
 import { buildSourceViewHtml } from './sourceview';
 import { parseBytes, parseFile, shutdownParser, warmupParser } from './parsing';
@@ -800,6 +802,20 @@ function registerIpc(): void {
   });
 
   ipcMain.handle('get-locale', () => app.getLocale());
+
+  // Bajo demanda a propósito: hashear re-parsea el mensaje, y hacerlo al abrir
+  // penalizaría el arranque (NFR-01). Solo cruzan hashes hex, nunca bytes.
+  ipcMain.handle('attachments:hashes', async (e) => {
+    const state = docs.get(e.sender.id);
+    if (!state) return [];
+    return getAllAttachmentHashes(state.buffer);
+  });
+
+  ipcMain.handle('message:iocs', (e): Iocs => {
+    const state = docs.get(e.sender.id);
+    if (!state) return { urls: [], domains: [], ips: [], emails: [] };
+    return documentIocs(state.document);
+  });
 
   ipcMain.handle('get-current-document', (e): MsgDocument | null => {
     // El pull marca el renderer como listo: es el momento seguro de

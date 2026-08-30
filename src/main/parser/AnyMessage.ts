@@ -1,5 +1,5 @@
 import type { LoadResult } from '@shared/types';
-import { getEmlAttachment, parseEml } from './EmlAdapter';
+import { getEmlAttachment, getEmlAttachmentHashes, parseEml } from './EmlAdapter';
 import { MsgAdapter } from './MsgAdapter';
 
 /**
@@ -51,4 +51,19 @@ export async function getAnyAttachment(
   if (isCfbf(buffer)) return MsgAdapter.getAttachmentContent(buffer, attachmentId);
   const eml = looksLikeEml(buffer) ? buffer : emlxToEml(buffer);
   return eml ? getEmlAttachment(eml, attachmentId) : null;
+}
+
+/**
+ * SHA-256 de todos los adjuntos, con un único parseo del mensaje.
+ *
+ * Permite comprobar un adjunto en un servicio de reputación (VirusTotal y
+ * similares) **buscando por hash, sin subir el archivo**: el contenido del
+ * correo nunca sale del equipo, que es justo el punto de la app.
+ */
+export async function getAllAttachmentHashes(
+  buffer: Buffer
+): Promise<{ id: number; sha256: string }[]> {
+  if (isCfbf(buffer)) return MsgAdapter.getAttachmentHashes(buffer);
+  const eml = looksLikeEml(buffer) ? buffer : emlxToEml(buffer);
+  return eml ? getEmlAttachmentHashes(eml) : [];
 }

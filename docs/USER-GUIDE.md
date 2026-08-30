@@ -240,9 +240,21 @@ En ambos casos se abre el mismo panel:
 - **Indicadores del mensaje**: URLs, dominios, IPs y direcciones extraídos y
   deduplicados, con botón de copiar por grupo — para reportar un phishing sin
   recopilarlos a mano.
+- **Ruta de entrega**: los servidores por los que dice haber pasado el correo,
+  del origen a tu buzón, con la IP de cada salto y el tiempo que tardó en el
+  tramo. Sirve para ver de dónde salió realmente y desde dónde se envió.
 - **SHA-256 de los adjuntos**: calculado bajo demanda al abrir el detalle.
   Permite consultar un archivo en un servicio de reputación **buscando por
   hash, sin subirlo**: el contenido del correo no sale del equipo.
+
+> **Hasta dónde se puede creer la ruta.** Cada servidor por el que pasa el
+> correo escribe su línea al principio y no puede comprobar las que ya estaban.
+> Los saltos de arriba —justo los que dicen de dónde salió— los puede haber
+> inventado enteros quien lo envía, así que un origen de aspecto respetable no
+> demuestra nada por sí solo. Los fiables son los de abajo, añadidos por el
+> servidor que recibió el mensaje. Por eso la ruta se muestra como información
+> para leer y **no genera ninguna señal de riesgo**: sería construir una
+> acusación sobre datos que controla quien envía.
 
 > **Qué significa que no aparezca el aviso.** Solo que no se detectó ninguna
 > de las señales anteriores. **No** es un certificado de que el correo sea

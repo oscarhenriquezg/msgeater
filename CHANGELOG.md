@@ -2,6 +2,29 @@
 
 Todos los cambios notables de este proyecto se documentan en este archivo.
 
+## [No publicado]
+
+### Añadido
+
+- **Ruta de entrega en el panel de análisis.** La cadena `Received` —los
+  servidores por los que pasó el correo— se muestra como una línea de tiempo
+  legible, del origen declarado a la entrega final, con la IP de cada salto
+  (copiable) y la demora del tramo. Antes ese dato existía pero solo en el
+  volcado técnico de `Ctrl/Cmd+U`.
+  - Junto a la ruta se explica **hasta dónde es fiable**: cada servidor añade
+    su línea sin poder comprobar las anteriores, así que los saltos de origen
+    los puede haber escrito íntegramente quien envía el mensaje.
+  - Por eso mismo **no genera ninguna señal de riesgo**: derivar un veredicto
+    de la cadena sería acusar a partir de datos que controla el atacante.
+  - Se indica el nombre inverso (rDNS) solo cuando **no** coincide con el
+    nombre con el que el emisor se anunció, que es cuando dice algo.
+
+### Corregido
+
+- El nombre del servidor receptor de cada salto arrastraba el `;` que separa
+  la fecha (`mx.example.com;`), tanto en la vista de código fuente como al
+  copiarlo.
+
 ## [0.7.0] - 2026-08-30
 
 ### Añadido

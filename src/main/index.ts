@@ -11,7 +11,8 @@ import type {
   LoadResult,
   MsgDocument,
   RemoteImageResult,
-  Iocs
+  Iocs,
+  MessageHop
 } from '@shared/types';
 import { MAX_PNG_HEIGHT } from '@shared/types';
 import { isExecutableAttachment } from '@shared/executable';
@@ -41,7 +42,7 @@ import { getAllAttachmentHashes, getAnyAttachment, isCfbf } from './parser/AnyMe
 import { MsgAdapter } from './parser/MsgAdapter';
 import { addRecent, clearRecents, existingRecents } from './recents';
 import { parseAuthResults, parseReceivedChain } from './headers-analysis';
-import { documentIocs } from './forensic-analysis';
+import { documentIocs, documentRoute } from './forensic-analysis';
 import { sanitizeWithReport } from './parser/sanitize';
 import { buildSourceViewHtml } from './sourceview';
 import { parseBytes, parseFile, shutdownParser, warmupParser } from './parsing';
@@ -815,6 +816,12 @@ function registerIpc(): void {
     const state = docs.get(e.sender.id);
     if (!state) return { urls: [], domains: [], ips: [], emails: [] };
     return documentIocs(state.document);
+  });
+
+  ipcMain.handle('message:route', (e): MessageHop[] => {
+    const state = docs.get(e.sender.id);
+    if (!state) return [];
+    return documentRoute(state.document);
   });
 
   ipcMain.handle('get-current-document', (e): MsgDocument | null => {

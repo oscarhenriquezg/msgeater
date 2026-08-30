@@ -84,6 +84,7 @@ equipo.
 | **Enlaces engañosos** | Resaltado opcional de los enlaces cuyo texto aparenta un dominio distinto al destino real (`<a>paypal.com</a>` → `evil.com`) |
 | **Unlink** | Un botón deja todos los enlaces inertes (tachados) para inspeccionar correos sospechosos sin riesgo |
 | **Macros ofimáticas** | Detecta si un `.docm`/`.xls`/… trae un proyecto VBA, sin abrirlo ni ejecutarlo |
+| **Ruta de entrega** | La cadena `Received` como línea de tiempo legible (origen, saltos, IPs y demoras), con el aviso de que los primeros saltos los puede inventar quien envía |
 | **Adjuntos bajo control** | Solo se escriben a disco por acción explícita; los temporales de "Abrir" se purgan al salir |
 
 ### 🛠️ Acciones y exportación

@@ -5,18 +5,10 @@
  * extracción de indicadores (IOCs).
  */
 
-import type { Iocs } from '@shared/types';
+import type { Iocs, MessageHop } from '@shared/types';
 
 export type { Iocs };
-
-export interface Hop {
-  from: string;
-  by: string;
-  /** Fecha del salto en ISO, si se pudo interpretar. */
-  date?: string;
-  /** Segundos transcurridos desde el salto anterior (puede ser negativo si los relojes difieren). */
-  deltaSeconds?: number;
-}
+export type Hop = MessageHop;
 
 export interface AuthResult {
   mechanism: 'spf' | 'dkim' | 'dmarc' | 'arc';
@@ -26,6 +18,78 @@ export interface AuthResult {
 /** Despliega las líneas continuadas (RFC 5322 folding). */
 function unfold(headers: string): string {
   return headers.replace(/\r?\n[ \t]+/g, ' ');
+}
+
+/** Octeto 0-255: evita confundir un número de versión con una IP. */
+const OCTET = '(?:25[0-5]|2[0-4]\\d|1\\d\\d|[1-9]?\\d)';
+const IPV4_BODY = `${OCTET}(?:\\.${OCTET}){3}`;
+/**
+ * IPv4 como token COMPLETO. `\b` no sirve: también hay frontera de palabra
+ * antes de un punto, así que en `mail-1.2.3.4.5.example` extraería `1.2.3.4`
+ * —una dirección inventada— y además, al ser la primera coincidencia, ganaría
+ * a la IP real que venga después. El nombre de ese host lo elige quien envía,
+ * de modo que sería una IP falsa a voluntad del atacante en un panel cuyo
+ * propósito es que alguien la copie para reportarla o bloquearla.
+ */
+const IPV4_TOKEN = new RegExp(`(?<![\\w.-])(${IPV4_BODY})(?![\\w.-])`);
+const IPV4_EMBEDDED = new RegExp(`(?:^|:)(${IPV4_BODY})$`);
+/** Candidato entre corchetes; la validación real la hace `isIpv6`. */
+const IPV6_CANDIDATE = /\[(?:IPv6:)?([0-9a-f:.]+)\]/i;
+
+/**
+ * ¿Es `value` una dirección IPv6 válida? Hace falta comprobarlo de verdad: un
+ * patrón laxo acepta `1::2::3` o la hora `13:40:30` (y el prefijo `IPv6:` no
+ * añade validez, solo lo declara quien escribe la cabecera), y a la vez
+ * rechaza formas legítimas con IPv4 embebida como `::ffff:192.0.2.1`.
+ */
+function isIpv6(value: string): boolean {
+  let text = value;
+  let expected = 8;
+
+  // Cola IPv4 embebida (`::ffff:192.0.2.1`): ocupa los dos últimos grupos.
+  const embedded = text.match(IPV4_EMBEDDED);
+  if (embedded) {
+    text = text.slice(0, text.length - embedded[1]!.length);
+    if (!text.endsWith(':')) return false;
+    text = text.slice(0, -1);
+    expected = 6;
+  }
+
+  const sides = text.split('::');
+  if (sides.length > 2) return false; // la compresión solo puede aparecer una vez
+
+  const groupsOf = (side: string) => (side === '' ? [] : side.split(':'));
+  const head = groupsOf(sides[0]!);
+  const tail = sides.length === 2 ? groupsOf(sides[1]!) : [];
+  if (![...head, ...tail].every((g) => /^[0-9a-f]{1,4}$/i.test(g))) return false;
+
+  // Sin `::` han de estar los ocho grupos; con `::` sustituye al menos a uno.
+  return sides.length === 2 ? head.length + tail.length < expected : head.length === expected;
+}
+
+/**
+ * IP del emisor declarada en un salto. Se busca SOLO en la cláusula `from`:
+ * la parte `by ... with ESMTP id ...` lleva versiones de software y números de
+ * identificación que un patrón de IPv4 confundiría con direcciones.
+ */
+function hopIp(receivedValue: string): string | undefined {
+  const by = receivedValue.search(/\bby\s/i);
+  const fromClause = by > 0 ? receivedValue.slice(0, by) : receivedValue;
+  const candidate = fromClause.match(IPV6_CANDIDATE)?.[1];
+  if (candidate && isIpv6(candidate)) return candidate;
+  return fromClause.match(IPV4_TOKEN)?.[1];
+}
+
+/**
+ * Nombre inverso anotado entre paréntesis (`from x (rdns.example [ip])`).
+ * Se descarta si repite el nombre anunciado —no aporta nada— y si no es un
+ * host (`unknown`, o la propia IP): solo se conserva cuando de verdad revela
+ * que el emisor se anunció con un nombre distinto del que resuelve su IP.
+ */
+function hopRdns(parenthetical: string | undefined, announced: string): string | undefined {
+  const first = parenthetical?.trim().split(/\s+/)[0]?.replace(/[[\]]/g, '');
+  if (!first || !/^[a-z0-9-]+(?:\.[a-z0-9-]+)*\.[a-z]{2,}$/i.test(first)) return undefined;
+  return first.toLowerCase() === announced.toLowerCase() ? undefined : first;
 }
 
 /**
@@ -45,9 +109,19 @@ export function parseReceivedChain(headers: string): Hop[] {
       const parsed = dateRaw ? new Date(dateRaw) : null;
       const fromMatch = value.match(/\bfrom\s+(\S+)(?:\s+\(([^)]*)\))?/i);
       const byMatch = value.match(/\bby\s+(\S+)/i);
+      // El nombre anunciado va solo, sin el paréntesis: lo que este contiene
+      // (rDNS e IP) se expone en campos aparte para no repetir el mismo dato
+      // dos veces en la interfaz. Un literal `[1.2.3.4]` pierde los corchetes
+      // para poder compararlo con `ip`.
+      // `by host; fecha` es la forma habitual, así que el token arrastra el
+      // punto y coma que separa la fecha; sin quitarlo se muestra pegado al
+      // nombre y no sirve para copiar ni comparar.
+      const announced = fromMatch?.[1]?.replace(/^\[|\]$/g, '').replace(/[;,]+$/, '') ?? '—';
       return {
-        from: fromMatch ? fromMatch[1] + (fromMatch[2] ? ` (${fromMatch[2]})` : '') : '—',
-        by: byMatch?.[1] ?? '—',
+        from: announced,
+        by: byMatch?.[1]?.replace(/[;,]+$/, '') ?? '—',
+        rdns: hopRdns(fromMatch?.[2], announced),
+        ip: hopIp(value),
         date: parsed && !Number.isNaN(parsed.getTime()) ? parsed.toISOString() : undefined
       };
     })

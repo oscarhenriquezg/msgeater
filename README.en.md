@@ -81,6 +81,7 @@ them, sanitize them — and display them without letting them leave your machine
 | **Deceptive links** | Optional highlighting of links whose text suggests a different domain than the real target (`<a>paypal.com</a>` → `evil.com`) |
 | **Unlink** | One button renders every link inert (struck through) so you can inspect suspicious mail safely |
 | **Office macros** | Flags a `.docm`/`.xls`/… carrying a VBA project, without opening or running it |
+| **Delivery route** | The `Received` chain as a readable timeline (origin, hops, IPs and delays), with the caveat that the sender can fabricate the earliest hops |
 | **Attachments under control** | Only written to disk on an explicit action; temporary files from "Open" are purged on exit |
 
 ### 🛠️ Actions and export

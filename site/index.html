@@ -1,0 +1,516 @@
+<!doctype html>
+<html lang="es" data-lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>MsgEater — visor de correos .msg, 100% offline</title>
+<meta name="description" content="Visor de escritorio para .msg, .eml y .emlx en Linux y macOS. Abre correos sospechosos sin ejecutar su contenido y sin que salgan de tu equipo." />
+<link rel="icon" href="img/icon.png" />
+<meta property="og:title" content="MsgEater" />
+<meta property="og:description" content="Abre correos .msg sospechosos sin que salgan de tu equipo." />
+<meta property="og:image" content="img/icon.png" />
+<style>
+  /* Esta página no carga NADA de terceros: ni fuentes, ni badges, ni scripts
+     externos. Sería incoherente que el sitio de una aplicación cuyo argumento
+     es "el correo no sale de tu equipo" filtrase la IP de cada visitante a
+     media docena de servicios. */
+  :root {
+    --amber: #f0b323;
+    --amber-deep: #c98a06;
+    --bg: #ffffff;
+    --bg-soft: #f6f7f9;
+    --bg-inset: #eceef1;
+    --text: #1b1f24;
+    --text-dim: #57606a;
+    --border: #d8dce1;
+    --danger: #b42318;
+    --ok: #1a7f45;
+    --radius: 12px;
+    --maxw: 1080px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0f1216;
+      --bg-soft: #161b22;
+      --bg-inset: #1c232c;
+      --text: #e8ecf1;
+      --text-dim: #9aa5b1;
+      --border: #2b333d;
+      --danger: #ff7b72;
+      --ok: #56d364;
+    }
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font: 16px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: var(--maxw); margin: 0 auto; padding: 0 20px; }
+  a { color: inherit; }
+
+  /* --- Idioma: se muestra solo el bloque del idioma activo ---------------- */
+  [data-lang="es"] [data-t="en"], [data-lang="en"] [data-t="es"] { display: none; }
+
+  /* --- Cabecera ---------------------------------------------------------- */
+  header.top {
+    position: sticky; top: 0; z-index: 20;
+    background: color-mix(in srgb, var(--bg) 88%, transparent);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--border);
+  }
+  .top .wrap { display: flex; align-items: center; gap: 14px; height: 60px; }
+  .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; letter-spacing: -0.01em; text-decoration: none; }
+  .brand img { width: 30px; height: 30px; border-radius: 7px; }
+  .top nav { margin-left: auto; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+  .top nav a, .langbtn {
+    font-size: 14px; color: var(--text-dim); text-decoration: none;
+    padding: 6px 10px; border-radius: 8px; border: 1px solid transparent;
+    background: none; cursor: pointer; font-family: inherit;
+  }
+  .top nav a:hover, .langbtn:hover { color: var(--text); background: var(--bg-soft); }
+  .langbtn { border-color: var(--border); font-weight: 600; }
+
+  /* --- Hero -------------------------------------------------------------- */
+  .hero { padding: 64px 0 34px; text-align: center; }
+  .hero img.logo { width: 104px; height: 104px; border-radius: 24px; }
+  .hero h1 { font-size: clamp(2.1rem, 5vw, 3.1rem); margin: 20px 0 6px; letter-spacing: -0.03em; }
+  .hero .tagline { font-size: clamp(1.05rem, 2.4vw, 1.3rem); color: var(--text); max-width: 640px; margin: 0 auto; }
+  /* Translúcido a propósito: un ámbar sólido dejaba el texto claro del modo
+     oscuro casi ilegible encima. */
+  .hero .tagline b {
+    background: color-mix(in srgb, var(--amber) 30%, transparent);
+    border-radius: 5px; padding: 1px 5px; box-decoration-break: clone;
+  }
+  .hero .sub { color: var(--text-dim); margin-top: 14px; font-size: 0.95rem; }
+  .cta { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin-top: 26px; }
+  .btn {
+    display: inline-block; padding: 11px 22px; border-radius: 10px;
+    text-decoration: none; font-weight: 600; font-size: 0.95rem;
+    border: 1px solid var(--border); color: var(--text); background: var(--bg-soft);
+  }
+  .btn:hover { border-color: var(--text-dim); }
+  .btn.primary { background: var(--amber); border-color: var(--amber-deep); color: #1b1f24; }
+  .btn.primary:hover { filter: brightness(1.06); }
+
+  /* --- Comando de instalación -------------------------------------------- */
+  .install { max-width: 760px; margin: 30px auto 0; }
+  .cmd {
+    display: flex; align-items: center; gap: 10px;
+    background: var(--bg-inset); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 12px 14px; text-align: left;
+  }
+  .cmd code {
+    flex: 1; min-width: 0; overflow-x: auto; white-space: nowrap;
+    font: 13px/1.5 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    color: var(--text);
+  }
+  .cmd button {
+    flex: none; border: 1px solid var(--border); background: var(--bg);
+    color: var(--text-dim); border-radius: 8px; padding: 5px 10px;
+    font: 600 12px inherit; font-family: inherit; cursor: pointer;
+  }
+  .cmd button:hover { color: var(--text); }
+  .install .note { color: var(--text-dim); font-size: 0.85rem; margin: 10px 2px 0; }
+
+  /* --- Visor de capturas por pestañas ------------------------------------ */
+  section { padding: 46px 0; }
+  h2 { font-size: clamp(1.4rem, 3vw, 1.9rem); letter-spacing: -0.02em; margin: 0 0 6px; }
+  .lead { color: var(--text-dim); margin: 0 0 26px; max-width: 620px; }
+  .tabs { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
+  .tabs button {
+    border: 1px solid var(--border); background: var(--bg-soft); color: var(--text-dim);
+    padding: 8px 14px; border-radius: 999px; cursor: pointer;
+    font: 600 13.5px inherit; font-family: inherit;
+  }
+  .tabs button:hover { color: var(--text); }
+  .tabs button[aria-selected="true"] { background: var(--amber); border-color: var(--amber-deep); color: #1b1f24; }
+  .shotbox { border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; background: var(--bg-soft); }
+  .shotbox a { display: block; }
+  .shotbox img { display: block; width: 100%; height: auto; }
+  .caption { padding: 13px 16px; border-top: 1px solid var(--border); color: var(--text-dim); font-size: 0.9rem; }
+  .caption strong { color: var(--text); }
+
+  /* --- Rejilla de características ---------------------------------------- */
+  .grid { display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
+  .card { border: 1px solid var(--border); border-radius: var(--radius); padding: 18px; background: var(--bg-soft); }
+  .card h3 { margin: 0 0 6px; font-size: 1rem; }
+  .card p { margin: 0; color: var(--text-dim); font-size: 0.9rem; }
+  .card code { font-size: 0.85em; background: var(--bg-inset); padding: 1px 5px; border-radius: 5px; }
+
+  /* --- Terminal ---------------------------------------------------------- */
+  .term {
+    background: #0d1117; color: #d7dde5; border: 1px solid #2b333d;
+    border-radius: var(--radius); padding: 16px 18px; overflow-x: auto;
+    font: 12.5px/1.65 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  }
+  .term .p { color: #56d364; }
+  .term .hi { color: #f0b323; }
+  .term .dim { color: #8b949e; }
+
+  /* --- Confianza --------------------------------------------------------- */
+  .trust { display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
+  .trust div { border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; }
+  .trust h3 { margin: 0 0 5px; font-size: 0.95rem; }
+  .trust p { margin: 0; font-size: 0.87rem; color: var(--text-dim); }
+  .disclaimer {
+    margin-top: 18px; padding: 14px 16px; font-size: 0.87rem; color: var(--text-dim);
+    border-left: 3px solid var(--amber); background: var(--bg-soft); border-radius: 0 8px 8px 0;
+  }
+
+  footer { border-top: 1px solid var(--border); padding: 30px 0 46px; color: var(--text-dim); font-size: 0.87rem; }
+  footer .links { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 12px; }
+  footer a { color: var(--text-dim); }
+  footer a:hover { color: var(--text); }
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="wrap">
+    <a class="brand" href="#top"><img src="img/icon.png" alt="" /> MsgEater</a>
+    <nav>
+      <a href="#capturas"><span data-t="es">Qué hace</span><span data-t="en">What it does</span></a>
+      <a href="#instalar"><span data-t="es">Instalar</span><span data-t="en">Install</span></a>
+      <a href="#confianza"><span data-t="es">Confianza</span><span data-t="en">Trust</span></a>
+      <a href="https://github.com/oscarhenriquezg/msgeater">GitHub</a>
+      <button class="langbtn" id="lang" type="button" aria-label="Change language">EN</button>
+    </nav>
+  </div>
+</header>
+
+<main id="top">
+
+  <div class="wrap hero">
+    <img class="logo" src="img/icon.png" alt="" />
+    <h1>MsgEater</h1>
+    <p class="tagline">
+      <span data-t="es">Abre correos <b>.msg</b> sospechosos sin ejecutar su contenido y sin que salgan de tu equipo.</span>
+      <span data-t="en">Open suspicious <b>.msg</b> email without running its content and without it leaving your machine.</span>
+    </p>
+    <p class="sub">
+      <span data-t="es">Linux y macOS · <code>.msg</code>, <code>.eml</code>, <code>.emlx</code> · software libre (GPL-3.0)</span>
+      <span data-t="en">Linux and macOS · <code>.msg</code>, <code>.eml</code>, <code>.emlx</code> · free software (GPL-3.0)</span>
+    </p>
+    <div class="cta">
+      <a class="btn primary" href="#instalar"><span data-t="es">Instalar</span><span data-t="en">Install</span></a>
+      <a class="btn" href="https://github.com/oscarhenriquezg/msgeater"><span data-t="es">Ver el código</span><span data-t="en">View the source</span></a>
+    </div>
+  </div>
+
+  <!-- ------------------------------------------------------------------ -->
+  <section class="wrap" id="capturas">
+    <h2>
+      <span data-t="es">Un correo hostil, visto por dentro</span>
+      <span data-t="en">A hostile email, seen from the inside</span>
+    </h2>
+    <p class="lead">
+      <span data-t="es">Las capturas son de un mensaje de phishing de ejemplo, con sus cabeceras
+        reales de suplantación. Nada se ejecuta al abrirlo.</span>
+      <span data-t="en">These are from an example phishing message, with real spoofing headers.
+        Nothing runs when you open it.</span>
+    </p>
+
+    <div class="tabs" role="tablist">
+      <button role="tab" data-shot="main" aria-selected="true"><span data-t="es">Ventana principal</span><span data-t="en">Main window</span></button>
+      <button role="tab" data-shot="analysis" aria-selected="false"><span data-t="es">Señales de riesgo</span><span data-t="en">Risk signals</span></button>
+      <button role="tab" data-shot="route" aria-selected="false"><span data-t="es">Ruta de entrega</span><span data-t="en">Delivery route</span></button>
+      <button role="tab" data-shot="phishing" aria-selected="false"><span data-t="es">Enlaces engañosos</span><span data-t="en">Misleading links</span></button>
+      <button role="tab" data-shot="source" aria-selected="false"><span data-t="es">Código fuente</span><span data-t="en">Message source</span></button>
+    </div>
+
+    <div class="shotbox">
+      <a id="shotlink" href="img/main-es-light.png" target="_blank" rel="noopener">
+        <img id="shot" src="img/main-es-light.png" alt="" />
+      </a>
+      <div class="caption" id="cap"></div>
+    </div>
+  </section>
+
+  <!-- ------------------------------------------------------------------ -->
+  <section class="wrap">
+    <h2><span data-t="es">Por qué existe</span><span data-t="en">Why it exists</span></h2>
+    <p class="lead">
+      <span data-t="es">En Linux y macOS no hay forma nativa de abrir un <code>.msg</code>. Y cuando el
+        correo es justo el que sospechas, abrirlo en un cliente normal es la peor idea.</span>
+      <span data-t="en">Linux and macOS have no native way to open a <code>.msg</code>. And when the
+        message is precisely the one you distrust, opening it in a normal client is the worst idea.</span>
+    </p>
+    <div class="grid">
+      <div class="card">
+        <h3><span data-t="es">Nada sale de tu equipo</span><span data-t="en">Nothing leaves your machine</span></h3>
+        <p><span data-t="es">Cero tráfico saliente automático, bloqueado en la capa de sesión y
+          comprobable con <code>tcpdump</code>. Sin telemetría.</span>
+        <span data-t="en">Zero automatic outbound traffic, blocked at the session layer and
+          verifiable with <code>tcpdump</code>. No telemetry.</span></p>
+      </div>
+      <div class="card">
+        <h3><span data-t="es">El contenido no se ejecuta</span><span data-t="en">The content never runs</span></h3>
+        <p><span data-t="es">El cuerpo se sanitiza con DOMPurify y se aísla en un iframe sin permiso
+          para ejecutar scripts, con CSP restrictiva.</span>
+        <span data-t="en">The body is sanitised with DOMPurify and isolated in an iframe with no
+          permission to run scripts, under a restrictive CSP.</span></p>
+      </div>
+      <div class="card">
+        <h3><span data-t="es">Triaje de phishing</span><span data-t="en">Phishing triage</span></h3>
+        <p><span data-t="es">Autenticación fallida, suplantación del remitente, homografías IDN,
+          acortadores, macros y adjuntos ejecutables — explicados, no puntuados.</span>
+        <span data-t="en">Failed authentication, sender spoofing, IDN homographs, URL shorteners,
+          macros and executable attachments — explained, not scored.</span></p>
+      </div>
+      <div class="card">
+        <h3><span data-t="es">Píxeles de rastreo bloqueados</span><span data-t="en">Tracking pixels blocked</span></h3>
+        <p><span data-t="es">Las imágenes remotas no se cargan solas. Si pides una, primero se
+          explica qué revela: tu IP y cuándo lo leíste.</span>
+        <span data-t="en">Remote images never load on their own. Ask for one and it first explains
+          what that reveals: your IP and when you read it.</span></p>
+      </div>
+      <div class="card">
+        <h3><span data-t="es">Indicadores listos para reportar</span><span data-t="en">Indicators ready to report</span></h3>
+        <p><span data-t="es">URLs, dominios, IPs y direcciones extraídos y copiables, más el SHA-256
+          de cada adjunto para consultarlo <b>por hash, sin subir el archivo</b>.</span>
+        <span data-t="en">URLs, domains, IPs and addresses extracted and copyable, plus the SHA-256
+          of each attachment to look it up <b>by hash, without uploading the file</b>.</span></p>
+      </div>
+      <div class="card">
+        <h3><span data-t="es">Nueve formatos de exportación</span><span data-t="en">Nine export formats</span></h3>
+        <p><span data-t="es">PDF, EML, PNG, HTML, TXT, Markdown, MHT, JSON y ZIP con los adjuntos —
+          para adjuntar a un ticket o archivar el caso.</span>
+        <span data-t="en">PDF, EML, PNG, HTML, TXT, Markdown, MHT, JSON and ZIP with attachments —
+          to attach to a ticket or archive the case.</span></p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ------------------------------------------------------------------ -->
+  <section class="wrap">
+    <h2><span data-t="es">También sin ventana</span><span data-t="en">Also without a window</span></h2>
+    <p class="lead">
+      <span data-t="es">Revisar un buzón entero no se hace correo a correo. El mismo análisis corre
+        en la terminal, sin servidor gráfico: por SSH, en un contenedor o desde un cron.</span>
+      <span data-t="en">Triaging a whole mailbox is not done one message at a time. The same analysis
+        runs in the terminal with no display server: over SSH, in a container or from cron.</span>
+    </p>
+<pre class="term" data-t="es"><span class="p">$</span> msgeater --analyze --json *.eml | jq -r <span class="hi">'.[] | select(.signals|length &gt; 0) | .file'</span>
+verifica-tu-cuenta.eml
+
+<span class="p">$</span> msgeater --analyze verifica-tu-cuenta.eml
+  <span class="dim">Señales de riesgo (8)</span>
+    [<span class="hi">alta</span>]  La autenticación del remitente falló (SPF=fail)…
+    [<span class="hi">alta</span>]  El adjunto «incidencia-4471.docm» contiene macros (código VBA)…
+    [media] Al responder, la respuesta iría a otro dominio…
+<span class="p">$</span> echo $?
+1  <span class="dim"># 0 sin señales · 1 con señales · 2 no se pudo analizar</span></pre>
+<pre class="term" data-t="en"><span class="p">$</span> msgeater --analyze --json *.eml | jq -r <span class="hi">'.[] | select(.signals|length &gt; 0) | .file'</span>
+verify-your-account.eml
+
+<span class="p">$</span> msgeater --analyze verify-your-account.eml
+  <span class="dim">Risk signals (8)</span>
+    [<span class="hi">high</span>]   Sender authentication failed (SPF=fail)…
+    [<span class="hi">high</span>]   The attachment "incident-4471.docm" contains macros (VBA code)…
+    [medium] Replying would send your answer to a different domain…
+<span class="p">$</span> echo $?
+1  <span class="dim"># 0 no signals · 1 signals found · 2 could not analyse</span></pre>
+  </section>
+
+  <!-- ------------------------------------------------------------------ -->
+  <section class="wrap" id="instalar">
+    <h2><span data-t="es">Instalar</span><span data-t="en">Install</span></h2>
+    <p class="lead">
+      <span data-t="es">Una línea en Linux y macOS. El script detecta el sistema, elige el paquete
+        adecuado y actualiza si ya lo tenías.</span>
+      <span data-t="en">One line on Linux and macOS. The script detects your system, picks the right
+        package and updates an existing install.</span>
+    </p>
+    <div class="install">
+      <div class="cmd">
+        <code id="cmdtext">bash -c "$(curl -fsSL https://raw.githubusercontent.com/oscarhenriquezg/msgeater/main/scripts/install.sh)"</code>
+        <button id="copy" type="button"><span data-t="es">Copiar</span><span data-t="en">Copy</span></button>
+      </div>
+      <p class="note">
+        <span data-t="es"><b>Linux:</b> <code>.deb</code> o <code>.rpm</code> según tu distribución, con AppImage
+          como alternativa sin root. <b>macOS:</b> <code>MsgEater.app</code> en <code>~/Applications</code>.
+          ¿Prefieres no ejecutar un script? <a href="https://github.com/oscarhenriquezg/msgeater/releases/latest">Descarga
+          los instaladores</a> y <a href="https://github.com/oscarhenriquezg/msgeater/blob/main/docs/VERIFY-RELEASE.md">verifícalos</a>.</span>
+        <span data-t="en"><b>Linux:</b> <code>.deb</code> or <code>.rpm</code> depending on your distribution, with
+          AppImage as a root-free fallback. <b>macOS:</b> <code>MsgEater.app</code> in <code>~/Applications</code>.
+          Rather not run a script? <a href="https://github.com/oscarhenriquezg/msgeater/releases/latest">Download
+          the installers</a> and <a href="https://github.com/oscarhenriquezg/msgeater/blob/main/docs/VERIFY-RELEASE.md">verify them</a>.</span>
+      </p>
+    </div>
+  </section>
+
+  <!-- ------------------------------------------------------------------ -->
+  <section class="wrap" id="confianza">
+    <h2><span data-t="es">Qué puedes comprobar tú</span><span data-t="en">What you can check yourself</span></h2>
+    <p class="lead">
+      <span data-t="es">Una aplicación para abrir correo hostil pide más confianza de lo normal. Estas
+        son las comprobaciones que puedes hacer sin creerte nada.</span>
+      <span data-t="en">An app for opening hostile email asks for more trust than usual. These are the
+        checks you can run without taking anyone's word for it.</span>
+    </p>
+    <div class="trust">
+      <div>
+        <h3><span data-t="es">Procedencia firmada</span><span data-t="en">Signed provenance</span></h3>
+        <p><span data-t="es">Cada release lleva una attestation Sigstore que ata el binario al commit
+          y al workflow que lo construyó, más <code>SHA256SUMS</code> y un SBOM en SPDX.</span>
+        <span data-t="en">Every release carries a Sigstore attestation binding the binary to the commit
+          and workflow that built it, plus <code>SHA256SUMS</code> and an SPDX SBOM.</span></p>
+      </div>
+      <div>
+        <h3><span data-t="es">Revisión independiente</span><span data-t="en">Independent review</span></h3>
+        <p><span data-t="es">OpenSSF Scorecard y el badge de OpenSSF Best Practices evalúan el repositorio
+          desde fuera; CodeQL analiza cada cambio.</span>
+        <span data-t="en">OpenSSF Scorecard and the OpenSSF Best Practices badge assess the repository
+          from outside; CodeQL analyses every change.</span></p>
+      </div>
+      <div>
+        <h3><span data-t="es">Escaneo antivirus</span><span data-t="en">Antivirus scan</span></h3>
+        <p><span data-t="es">Los instaladores de cada release se escanean con ~70 motores en VirusTotal,
+          y el resultado se publica en el README.</span>
+        <span data-t="en">Each release's installers are scanned with ~70 engines on VirusTotal, and the
+          result is published in the README.</span></p>
+      </div>
+      <div>
+        <h3><span data-t="es">Todo el código a la vista</span><span data-t="en">All the code in the open</span></h3>
+        <p><span data-t="es">GPL-3.0. Puedes leerlo, construirlo tú mismo y comparar el hash con el
+          publicado.</span>
+        <span data-t="en">GPL-3.0. Read it, build it yourself and compare the hash with the published
+          one.</span></p>
+      </div>
+    </div>
+    <p class="disclaimer">
+      <span data-t="es"><b>Y lo que no.</b> Ninguna de esas comprobaciones certifica que el programa sea
+        seguro, y el análisis de un correo tampoco: que no aparezcan señales significa que no se
+        detectó ninguna de las que se comprueban, <b>no</b> que el mensaje sea inofensivo. Por eso la
+        aplicación nunca muestra un indicador «en verde».</span>
+      <span data-t="en"><b>And what they don't.</b> None of those checks certifies the program is safe,
+        and neither does analysing a message: no signals means none of the checked signals were
+        detected, <b>not</b> that the message is harmless. That is why the app never shows an
+        "all clear" indicator.</span>
+    </p>
+  </section>
+
+</main>
+
+<footer>
+  <div class="wrap">
+    <div class="links">
+      <a href="https://github.com/oscarhenriquezg/msgeater">GitHub</a>
+      <a href="https://github.com/oscarhenriquezg/msgeater/releases"><span data-t="es">Versiones</span><span data-t="en">Releases</span></a>
+      <a href="https://github.com/oscarhenriquezg/msgeater/blob/main/docs/USER-GUIDE.md"><span data-t="es">Guía de usuario</span><span data-t="en">User guide</span></a>
+      <a href="https://github.com/oscarhenriquezg/msgeater/blob/main/SECURITY.md"><span data-t="es">Seguridad</span><span data-t="en">Security</span></a>
+      <a href="https://github.com/oscarhenriquezg/msgeater/blob/main/CHANGELOG.md">Changelog</a>
+    </div>
+    <p>
+      <span data-t="es">GPL-3.0 · Hecho por <a href="https://github.com/oscarhenriquezg">Oscar Henríquez</a>.
+        Esta página no carga nada de terceros: ni fuentes, ni analítica, ni badges externos.</span>
+      <span data-t="en">GPL-3.0 · Built by <a href="https://github.com/oscarhenriquezg">Oscar Henríquez</a>.
+        This page loads nothing from third parties: no fonts, no analytics, no external badges.</span>
+    </p>
+  </div>
+</footer>
+
+<script>
+(function () {
+  var CAPTIONS = {
+    main: {
+      es: '<strong>Ventana principal.</strong> Metadatos, adjuntos y el cuerpo ya sanitizado, dentro de un iframe sin permiso para ejecutar scripts.',
+      en: '<strong>Main window.</strong> Metadata, attachments and the already-sanitised body, inside an iframe with no permission to run scripts.'
+    },
+    analysis: {
+      es: '<strong>Señales de riesgo.</strong> Cada indicio se explica en una frase. No hay puntuación: un número inventado daría una falsa sensación de precisión.',
+      en: '<strong>Risk signals.</strong> Each indicator is explained in one sentence. There is no score: a made-up number would give a false sense of precision.'
+    },
+    route: {
+      es: '<strong>Ruta de entrega.</strong> La cadena <code>Received</code> como línea de tiempo, avisando de que los primeros saltos los puede inventar quien envía.',
+      en: '<strong>Delivery route.</strong> The <code>Received</code> chain as a timeline, warning that the sender can fabricate the earliest hops.'
+    },
+    phishing: {
+      es: '<strong>Enlaces engañosos.</strong> El texto dice un dominio y el destino es otro: queda marcado. Un botón deja además todos los enlaces inertes.',
+      en: '<strong>Misleading links.</strong> The text claims one domain and the target is another: it gets flagged. A button also makes every link inert.'
+    },
+    source: {
+      es: '<strong>Código fuente.</strong> Cabeceras resaltadas, resultados SPF/DKIM/DMARC, propiedades MAPI crudas y el diff de lo que la sanitización eliminó.',
+      en: '<strong>Message source.</strong> Highlighted headers, SPF/DKIM/DMARC results, raw MAPI properties and a diff of what sanitising removed.'
+    }
+  };
+  var ALT = {
+    es: 'Captura de MsgEater: ', en: 'MsgEater screenshot: '
+  };
+
+  var root = document.documentElement;
+  var shot = document.getElementById('shot');
+  var cap = document.getElementById('cap');
+  var langBtn = document.getElementById('lang');
+  var tabs = Array.prototype.slice.call(document.querySelectorAll('[role="tab"]'));
+  var current = 'main';
+
+  function lang() { return root.getAttribute('data-lang'); }
+
+  var darkQuery = window.matchMedia('(prefers-color-scheme: dark)');
+  function theme() { return darkQuery.matches ? 'dark' : 'light'; }
+
+  function render() {
+    var l = lang();
+    var file = 'img/' + current + '-' + l + '-' + theme() + '.png';
+    shot.src = file;
+    document.getElementById('shotlink').href = file;
+    shot.alt = ALT[l] + document.querySelector('[data-shot="' + current + '"] [data-t="' + l + '"]').textContent;
+    cap.innerHTML = CAPTIONS[current][l];
+    langBtn.textContent = l === 'es' ? 'EN' : 'ES';
+    root.setAttribute('lang', l);
+  }
+
+  function setLang(l) {
+    root.setAttribute('data-lang', l);
+    try { localStorage.setItem('msgeater-lang', l); } catch (e) { /* modo privado */ }
+    render();
+  }
+
+  darkQuery.addEventListener('change', render);
+
+  langBtn.addEventListener('click', function () {
+    setLang(lang() === 'es' ? 'en' : 'es');
+  });
+
+  function select(tab) {
+    tabs.forEach(function (t) { t.setAttribute('aria-selected', String(t === tab)); });
+    current = tab.dataset.shot;
+    render();
+  }
+
+  tabs.forEach(function (tab, i) {
+    tab.addEventListener('click', function () { select(tab); });
+    tab.addEventListener('keydown', function (e) {
+      var d = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0;
+      if (!d) return;
+      e.preventDefault();
+      var next = tabs[(i + d + tabs.length) % tabs.length];
+      next.focus();
+      select(next);
+    });
+  });
+
+  var copy = document.getElementById('copy');
+  copy.addEventListener('click', function () {
+    var text = document.getElementById('cmdtext').textContent;
+    navigator.clipboard.writeText(text).then(function () {
+      var span = copy.querySelector('[data-t="' + lang() + '"]');
+      var old = span.textContent;
+      span.textContent = lang() === 'es' ? '¡Copiado!' : 'Copied!';
+      setTimeout(function () { span.textContent = old; }, 1600);
+    });
+  });
+
+  // Idioma inicial: el elegido antes, si no el del navegador, si no español.
+  var saved = null;
+  try { saved = localStorage.getItem('msgeater-lang'); } catch (e) { /* modo privado */ }
+  setLang(saved || (/^es/i.test(navigator.language || '') ? 'es' : 'en'));
+})();
+</script>
+</body>
+</html>

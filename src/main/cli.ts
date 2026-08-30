@@ -218,9 +218,10 @@ function printText(analysis: Analysis, out: (line: string) => void): void {
   out('');
 }
 
-const HELP = `msgeater-analyze — ${t('cli.tagline')}
+const HELP = `MsgEater — ${t('cli.tagline')}
 
-  msgeater-analyze [--json] <archivo…>
+  msgeater --analyze [--json] <archivo…>           ${t('cli.help.viaPkg')}
+  MsgEater.AppImage --analyze [--json] <archivo…>  ${t('cli.help.viaAppImage')}
 
   --json     ${t('cli.help.json')}
   -h, --help ${t('cli.help.help')}

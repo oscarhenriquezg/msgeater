@@ -1,3 +1,5 @@
+import { spawnSync } from 'node:child_process';
+import { createRequire } from 'node:module';
 import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -10,6 +12,15 @@ import { _electron as electron, expect, test, type ElectronApplication, type Pag
 
 const ROOT = join(import.meta.dirname, '..', '..');
 const FIXTURES = join(ROOT, 'tests', 'fixtures');
+/**
+ * Binario REAL de Electron para invocar el modo consola.
+ *
+ * A propósito no se usa `node_modules/.bin/electron`: ese envoltorio hace
+ * `process.exit(1)` cuando el proceso muere por una señal, el mismo código que
+ * el analizador usa para «se detectaron señales». Con él, una caída se
+ * confunde con un análisis correcto.
+ */
+const electronPath = createRequire(import.meta.url)('electron') as string;
 
 let app: ElectronApplication;
 let page: Page;
@@ -589,4 +600,52 @@ test('la barra de herramientas no desborda en el ancho mínimo de ventana', asyn
     });
     expect(fuera, `elementos fuera de pantalla a ${width}px`).toEqual([]);
   }
+});
+
+// `--analyze` corre en el binario ya empaquetado, así que se ejercita
+// lanzándolo como lo haría quien lo use, no a través del helper de Playwright.
+test('modo consola: analiza con la ventana abierta y sin perder salida', async () => {
+  // Con una instancia gráfica en marcha: el lock de instancia única no debe
+  // tragarse la invocación y dejar el comando sin imprimir nada.
+  await launch(join(FIXTURES, 'html-basic.msg'));
+  await expect(page.locator('#header')).toBeVisible();
+
+  const result = spawnSync(
+    electronPath,
+    [
+      // `--no-sandbox` es una necesidad del binario de node_modules en CI, donde
+      // `chrome-sandbox` no queda con root:4755 y Electron aborta con SIGTRAP
+      // antes de ejecutar nada. Los paquetes .deb/.rpm/AppImage sí lo instalan
+      // bien, así que no es algo que tenga que hacer quien usa la aplicación.
+      // Va ANTES de la bandera: al analizador solo le llega lo que la sigue.
+      '.',
+      '--no-sandbox',
+      '--analyze',
+      '--json',
+      join(FIXTURES, 'spoofed.eml'),
+      join(FIXTURES, 'office-macros.msg')
+    ],
+    // Con timeout a propósito: si la bandera dejara de atenderse, esto abriría
+    // una ventana que no termina nunca y el test colgaría CI en vez de fallar.
+    { cwd: ROOT, encoding: 'utf-8', env: { ...process.env }, timeout: 60_000 }
+  );
+  // Cualquier fallo debe explicarse solo: sin esto, una caída del proceso se
+  // manifestaba como un `JSON.parse('')` sin pista de la causa.
+  const debug = `status=${result.status} signal=${result.signal} stderr=${result.stderr}`;
+  expect(result.error, `el modo consola debe terminar solo — ${debug}`).toBeUndefined();
+  expect(result.signal, `no debe morir por una señal — ${debug}`).toBeNull();
+
+  // Código 1 = se detectaron señales (contrato con quien lo use en un script).
+  expect(result.status, debug).toBe(1);
+
+  // La salida llega entera: `app.exit()` trunca lo que quede en el buffer
+  // cuando stdout es una tubería, que es justo el caso de `… | jq`.
+  expect(result.stdout, `stdout vacío — ${debug}`).not.toBe('');
+  const parsed = JSON.parse(result.stdout) as { file: string; signals: unknown[] }[];
+  expect(parsed).toHaveLength(2);
+  expect(parsed[0]!.signals.length).toBeGreaterThan(0);
+  expect(parsed[1]!.file).toContain('office-macros.msg');
+
+  // Y la ventana sigue en pie: el análisis no interfiere con la instancia viva.
+  await expect(page.locator('#header')).toBeVisible();
 });

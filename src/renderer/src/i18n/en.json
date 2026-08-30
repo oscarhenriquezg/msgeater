@@ -183,5 +183,7 @@
   "cli.help.json": "JSON output, to pipe into other tools",
   "cli.help.help": "show this help",
   "cli.help.exit": "  Exit codes: 0 no signal detected · 1 a signal was detected · 2 could not analyse.",
-  "cli.help.disclaimer": "  Exiting with 0 means none of the signals that are checked were detected.\n  It does NOT mean the message is safe. Nothing is sent over the network and the\n  message body is never printed: the output is the analysis only."
+  "cli.help.disclaimer": "  Exiting with 0 means none of the signals that are checked were detected.\n  It does NOT mean the message is safe. Nothing is sent over the network and the\n  message body is never printed: the output is the analysis only.",
+  "cli.help.viaPkg": "(.deb/.rpm install)",
+  "cli.help.viaAppImage": "(AppImage)"
 }

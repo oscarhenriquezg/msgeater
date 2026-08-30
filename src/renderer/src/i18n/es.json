@@ -183,5 +183,7 @@
   "cli.help.json": "salida en JSON, para encadenar con otras herramientas",
   "cli.help.help": "muestra esta ayuda",
   "cli.help.exit": "  Códigos de salida: 0 no se detectó ninguna señal · 1 se detectó alguna · 2 no se pudo analizar.",
-  "cli.help.disclaimer": "  Salir con 0 significa que no se detectó ninguna de las señales que se comprueban.\n  NO significa que el correo sea seguro. No se envía nada por la red ni se imprime\n  el cuerpo del mensaje: solo el análisis."
+  "cli.help.disclaimer": "  Salir con 0 significa que no se detectó ninguna de las señales que se comprueban.\n  NO significa que el correo sea seguro. No se envía nada por la red ni se imprime\n  el cuerpo del mensaje: solo el análisis.",
+  "cli.help.viaPkg": "(instalación .deb/.rpm)",
+  "cli.help.viaAppImage": "(AppImage)"
 }

@@ -59,7 +59,16 @@ describe('salida a un terminal con contenido hostil', () => {
     const { out } = await cli('--json', fixture('ansi-subject.eml'));
     expect(out).not.toContain('\u001b');
     expect(out).toContain('\\u001b');
-    expect(() => JSON.parse(out)).not.toThrow();
+
+    // U+009B (CSI) hace de `ESC [` con un solo carácter y `JSON.stringify`
+    // NO lo escapa: solo llega hasta U+001F. Un JSON se mira en un terminal
+    // continuamente, así que se escapa aparte.
+    expect(out).not.toContain('\u009b');
+    expect(out).toContain('\\u009b');
+
+    // Y sigue siendo el mismo valor al parsearlo: se escapa, no se censura.
+    const parsed = JSON.parse(out) as { subject: string }[];
+    expect(parsed[0]!.subject).toContain('\u009b');
   });
 });
 

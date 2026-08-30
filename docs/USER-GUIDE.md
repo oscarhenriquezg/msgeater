@@ -111,6 +111,11 @@ node out/main/cli.js --json *.msg |
   cruda parece ASCII inofensivo— y en un terminal mueven el cursor y borran
   líneas, con lo que un correo hostil podría tapar las señales que lo delatan
   dentro de la propia salida del análisis.
+  - En el modo texto se eliminan; en `--json` se **escapan** (`\u009b`), que
+    conserva el valor para quien procese la salida sin dejar el carácter
+    activo si alguien la mira en un terminal. `JSON.stringify` por sí solo no
+    basta: escapa hasta U+001F, pero no los controles C1 (U+0080–U+009F), y
+    U+009B es CSI, que hace de `ESC [` con un único carácter.
 
 ### Otras formas de abrir
 

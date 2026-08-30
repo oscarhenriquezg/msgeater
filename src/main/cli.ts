@@ -55,12 +55,32 @@ function t(key: string, vars: Record<string, string> = {}): string {
  * Un asunto o un nombre de adjunto pueden traer secuencias de escape ANSI, y
  * en un terminal esas secuencias mueven el cursor y reescriben lo ya impreso:
  * un correo hostil podría falsificar la salida del propio análisis que lo
- * delata, borrando sus señales de la pantalla. La salida `--json` no lo
- * necesita porque `JSON.stringify` ya escapa los caracteres de control.
+ * delata, borrando sus señales de la pantalla.
  */
 function plain(text: string): string {
   // eslint-disable-next-line no-control-regex -- filtrarlos es justo el objetivo
   return text.replace(/[\u0000-\u001f\u007f-\u009f]/g, '');
+}
+
+/**
+ * Lo mismo para la salida `--json`, donde no sirve `plain()`: ahí el dato se
+ * entrega tal cual para que lo lea otro programa.
+ *
+ * `JSON.stringify` solo escapa hasta U+001F, así que los controles C1
+ * (U+0080–U+009F) salen crudos — y U+009B es CSI, que en un terminal hace de
+ * `ESC [` con un solo carácter. Un JSON se mira en un terminal continuamente,
+ * y basta con que lo reimprima cualquier herramienta de la tubería para que
+ * vuelva el problema que `plain()` evita en el modo texto.
+ *
+ * Escaparlos no altera el valor: `\u009b` dentro de una cadena JSON es ese
+ * mismo carácter al parsearlo, y estos códigos solo pueden aparecer dentro de
+ * cadenas —nunca en la sintaxis—, así que el reemplazo global es seguro.
+ */
+function escapeControls(json: string): string {
+  return json.replace(
+    /[\u007f-\u009f]/g,
+    (c) => `\\u${c.charCodeAt(0).toString(16).padStart(4, '0')}`
+  );
 }
 
 function formatSize(bytes: number): string {
@@ -246,7 +266,7 @@ export async function run(
     }
   }
 
-  if (values.json) out(JSON.stringify(results, null, 2));
+  if (values.json) out(escapeControls(JSON.stringify(results, null, 2)));
   else for (const analysis of results) printText(analysis, out);
 
   if (failed) return EXIT_ERROR;

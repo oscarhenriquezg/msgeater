@@ -433,13 +433,15 @@ writeFileSync(join(outDir, 'legit-bounce.eml'), EML_LEGIT_BOUNCE);
 
 // Asunto con secuencias de escape ANSI, codificado en RFC 2047 (que es como
 // se cuelan: la cabecera cruda es ASCII inofensivo y el parser las decodifica).
-// El payload es ESC[1A ESC[2K "Sin señales de riesgo": en un terminal sube una
-// línea, la borra y escribe su propio texto encima — es decir, un correo
-// hostil reescribiendo la salida del análisis que lo delata.
+// El payload lleva ESC[1A ESC[2K y además U+009B (CSI), que hace de `ESC [`
+// con un SOLO carácter: en un terminal sube una línea, la borra y escribe su
+// propio texto encima — un correo hostil reescribiendo la salida del análisis
+// que lo delata. El C1 está a propósito: `JSON.stringify` no lo escapa, así
+// que es el que se colaba por la salida `--json`.
 const EML_ANSI_SUBJECT = [
   'From: "Remitente" <alguien@example.com>',
   'To: victima@empresa.example',
-  'Subject: =?utf-8?B?G1sxQRtbMktTaW4gc2XDsWFsZXMgZGUgcmllc2dv?=',
+  'Subject: =?utf-8?B?G1sxQRtbMkvCmzJLU2luIHNlw7FhbGVzIGRlIHJpZXNnbw==?=',
   'Date: Mon, 10 Jun 2024 12:00:00 +0000',
   'MIME-Version: 1.0',
   'Content-Type: text/plain; charset=utf-8',

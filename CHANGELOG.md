@@ -25,7 +25,9 @@ Todos los cambios notables de este proyecto se documentan en este archivo.
     de adjunto. Se cuelan codificadas en RFC 2047 —la cabecera cruda parece
     ASCII inofensivo— y en un terminal mueven el cursor y borran líneas: un
     correo hostil podía tapar las señales que lo delatan dentro de la propia
-    salida del análisis.
+    salida del análisis. En el modo texto se eliminan; en `--json` se escapan
+    (`\u009b`), incluidos los controles C1 que `JSON.stringify` deja pasar
+    —U+009B es CSI, que hace de `ESC [` con un solo carácter—.
   - Los textos salen de los mismos ficheros de i18n que la ventana, para que
     no acaben diciendo cosas distintas de la misma señal.
 - **Ruta de entrega en el panel de análisis.** La cadena `Received` —los

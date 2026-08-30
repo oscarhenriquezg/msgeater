@@ -2,6 +2,30 @@
 
 Todos los cambios notables de este proyecto se documentan en este archivo.
 
+## [0.7.0] - 2026-08-30
+
+### Añadido
+
+- **El panel de análisis es accesible en cualquier momento**, con un botón
+  nuevo en la barra de herramientas, la entrada *Ver → Analizar el mensaje* y
+  el atajo `Ctrl/Cmd+Shift+A`. Antes solo se podía abrir cuando el correo
+  disparaba alguna señal de riesgo, lo que dejaba sin acceso a los indicadores
+  y a los hashes de los adjuntos en un correo normal — y querer el SHA-256 de
+  un adjunto no depende de que el mensaje sea sospechoso.
+  - El aviso automático no cambia: sigue apareciendo **solo** cuando hay
+    señales que reportar.
+  - Al abrir el panel en un correo sin señales, se indica exactamente eso —que
+    no se detectó ninguna de las señales comprobadas— junto con la advertencia
+    de que no equivale a que el correo sea seguro.
+
+### Corregido
+
+- Con la ventana estrecha, la barra de herramientas dejaba **Exportar** y
+  **Acerca de** fuera de la pantalla: seguían existiendo pero era imposible
+  pulsarlos. Ocurría ya en el ancho mínimo que la propia aplicación permite
+  (640 px). Ahora la barra se reorganiza en dos filas y esos botones se
+  mantienen alineados a la derecha.
+
 ## [0.6.0] - 2026-08-30
 
 ### Añadido

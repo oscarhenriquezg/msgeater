@@ -1,0 +1,51 @@
+# Publica la landing (site/) en GitHub Pages.
+#
+# La página es estática y autocontenida: no hay build ni dependencias que
+# instalar, solo se sube el directorio tal cual. Las capturas se regeneran a
+# mano con `node scripts/make-landing-shots.mjs` y se versionan, para que
+# publicar no dependa de arrancar la aplicación en CI.
+name: Pages
+
+on:
+  push:
+    branches: [main]
+    # Solo cuando cambia el sitio: no tiene sentido redesplegar por un cambio
+    # en el código de la aplicación.
+    paths:
+      - 'site/**'
+      - '.github/workflows/pages.yml'
+  workflow_dispatch:
+
+# Por defecto, solo lectura; los permisos de publicación se piden en el job.
+permissions:
+  contents: read
+
+# Un despliegue a la vez, sin cancelar el que ya esté en curso: abortar a
+# medias puede dejar el sitio en un estado intermedio.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      pages: write # publicar
+      id-token: write # OIDC que exige deploy-pages
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+
+      - uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6
+
+      - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5
+        with:
+          path: site
+
+      - id: deploy
+        uses: actions/deploy-pages@cd2ce8fcbc39b97be8ca5fce6e763baed58fa128 # v5

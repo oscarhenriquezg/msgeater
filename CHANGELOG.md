@@ -6,13 +6,19 @@ Todos los cambios notables de este proyecto se documentan en este archivo.
 
 ### Añadido
 
-- **Analizador de línea de comandos** (`out/main/cli.js`): el mismo análisis
+- **Analizador de línea de comandos** (`msgeater --analyze`): el mismo análisis
   que muestra el panel de la aplicación —señales, ruta de entrega, indicadores
   y SHA-256 de los adjuntos— sin abrir ventana, con salida de texto o `--json`.
   Abrir los correos de uno en uno no sirve para revisar un buzón entero.
-  - **No usa Electron ni necesita servidor gráfico**: funciona por SSH, en un
-    contenedor o desde un cron, con `node` o con el binario de la app en modo
-    Node (`ELECTRON_RUN_AS_NODE=1`).
+  - **No abre ventana ni necesita servidor gráfico**: funciona por SSH, en un
+    contenedor o desde un cron, con el mismo binario ya instalado — no hay un
+    ejecutable aparte que instalar. Por dentro reutiliza ese binario en modo
+    Node, sin arrancar Chromium: hacerlo con `await` en el proceso main no
+    sirve, porque en cuanto se cede el control al bucle de mensajes Electron
+    inicializa la plataforma gráfica y aborta con «Missing X server».
+  - La bandera se atiende **antes** del bloqueo de instancia única, así que el
+    comando responde aunque haya una ventana abierta; si no, la invocación se
+    la tragaría la instancia en marcha y no imprimiría nada.
   - Códigos de salida pensados para scripts: `0` no se detectó ninguna señal,
     `1` se detectó alguna, `2` algún archivo no se pudo analizar. `0` significa
     exactamente eso, **no** que el correo sea seguro.

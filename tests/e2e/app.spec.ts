@@ -1,3 +1,4 @@
+import { spawnSync } from 'node:child_process';
 import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -10,6 +11,8 @@ import { _electron as electron, expect, test, type ElectronApplication, type Pag
 
 const ROOT = join(import.meta.dirname, '..', '..');
 const FIXTURES = join(ROOT, 'tests', 'fixtures');
+/** Binario de Electron, para invocar el modo consola como un usuario. */
+const electronPath = join(ROOT, 'node_modules', '.bin', 'electron');
 
 let app: ElectronApplication;
 let page: Page;
@@ -589,4 +592,35 @@ test('la barra de herramientas no desborda en el ancho mínimo de ventana', asyn
     });
     expect(fuera, `elementos fuera de pantalla a ${width}px`).toEqual([]);
   }
+});
+
+// `--analyze` corre en el binario ya empaquetado, así que se ejercita
+// lanzándolo como lo haría quien lo use, no a través del helper de Playwright.
+test('modo consola: analiza con la ventana abierta y sin perder salida', async () => {
+  // Con una instancia gráfica en marcha: el lock de instancia única no debe
+  // tragarse la invocación y dejar el comando sin imprimir nada.
+  await launch(join(FIXTURES, 'html-basic.msg'));
+  await expect(page.locator('#header')).toBeVisible();
+
+  const result = spawnSync(
+    electronPath,
+    ['.', '--analyze', '--json', join(FIXTURES, 'spoofed.eml'), join(FIXTURES, 'office-macros.msg')],
+    // Con timeout a propósito: si la bandera dejara de atenderse, esto abriría
+    // una ventana que no termina nunca y el test colgaría CI en vez de fallar.
+    { cwd: ROOT, encoding: 'utf-8', env: { ...process.env }, timeout: 60_000 }
+  );
+  expect(result.error, 'el modo consola debe terminar solo').toBeUndefined();
+
+  // Código 1 = se detectaron señales (contrato con quien lo use en un script).
+  expect(result.status).toBe(1);
+
+  // La salida llega entera: `app.exit()` trunca lo que quede en el buffer
+  // cuando stdout es una tubería, que es justo el caso de `… | jq`.
+  const parsed = JSON.parse(result.stdout) as { file: string; signals: unknown[] }[];
+  expect(parsed).toHaveLength(2);
+  expect(parsed[0]!.signals.length).toBeGreaterThan(0);
+  expect(parsed[1]!.file).toContain('office-macros.msg');
+
+  // Y la ventana sigue en pie: el análisis no interfiere con la instancia viva.
+  await expect(page.locator('#header')).toBeVisible();
 });

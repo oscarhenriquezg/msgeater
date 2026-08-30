@@ -1,3 +1,4 @@
+import { spawnSync } from 'node:child_process';
 import { rmSync } from 'node:fs';
 import { readFile, writeFile, mkdir, mkdtemp } from 'node:fs/promises';
 import { basename, extname, join } from 'node:path';
@@ -158,12 +159,51 @@ if (customUserData) app.setPath('userData', customUserData);
 // Debe fijarse antes de que la app esté lista.
 app.commandLine.appendSwitch('password-store', 'basic');
 
-// FR-03: instancia única; la segunda invocación entrega su argv a la primera.
-const locked = app.requestSingleInstanceLock();
-if (!locked) {
-  app.quit();
+/** Bandera que activa el modo consola en vez de abrir la ventana. */
+const ANALYZE_FLAG = '--analyze';
+
+// Análisis por consola. Se resuelve ANTES que nada por dos motivos: no llega a
+// `app.whenReady()`, que es lo único que exige un servidor gráfico (así el
+// mismo binario instalado sirve por SSH o en un cron), y se adelanta al lock de
+// instancia única — si no, con una ventana ya abierta la invocación se la
+// tragaría la primera instancia y el comando no imprimiría nada.
+if (process.argv.includes(ANALYZE_FLAG)) {
+  runAnalyze();
 } else {
-  bootstrap();
+  // FR-03: instancia única; la segunda invocación entrega su argv a la primera.
+  const locked = app.requestSingleInstanceLock();
+  if (!locked) {
+    app.quit();
+  } else {
+    bootstrap();
+  }
+}
+
+/**
+ * Ejecuta el analizador en un subproceso **síncrono** y termina con su código.
+ *
+ * El análisis es asíncrono (parseo, hashes), pero hacerlo aquí con `await` no
+ * funciona sin servidor gráfico: en cuanto se cede el control al bucle de
+ * mensajes, Electron inicializa la plataforma y aborta con «Missing X server».
+ * La única forma de no llegar ahí es no cederlo, así que el trabajo va a un
+ * subproceso y `spawnSync` bloquea hasta que termina.
+ *
+ * El subproceso es este mismo binario en modo Node (`ELECTRON_RUN_AS_NODE`),
+ * que no arranca Chromium: no hace falta empaquetar ningún runtime aparte.
+ * Con `stdio: 'inherit'` la salida va directa al descriptor real, así que
+ * tampoco hay buffers que vaciar antes de salir —`app.exit()` no los vacía—.
+ */
+function runAnalyze(): void {
+  // Todo lo que sigue a la bandera es del analizador; así funciona igual
+  // empaquetado (`msgeater --analyze x.eml`) que en desarrollo, donde argv
+  // lleva además el binario de electron y el directorio del proyecto.
+  const args = process.argv.slice(process.argv.indexOf(ANALYZE_FLAG) + 1);
+  const cli = join(import.meta.dirname, 'cli.js');
+  const { status } = spawnSync(process.execPath, [cli, ...args], {
+    stdio: 'inherit',
+    env: { ...process.env, ELECTRON_RUN_AS_NODE: '1' }
+  });
+  app.exit(status ?? 2);
 }
 
 function bootstrap(): void {

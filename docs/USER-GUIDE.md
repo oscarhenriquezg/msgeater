@@ -44,35 +44,35 @@ open -a MsgEater correo.msg
 
 Abrir los correos de uno en uno no sirve para revisar un buzón entero, así que
 el mismo análisis que muestra el panel de la aplicación está disponible como
-programa de consola. **No usa Electron ni necesita servidor gráfico**: funciona
-por SSH, en un contenedor o desde un cron.
+programa de consola: **no abre ventana ni necesita servidor gráfico**, así que
+funciona por SSH, en un contenedor o desde un cron. Por dentro reutiliza el
+propio binario de la aplicación en modo Node, sin arrancar Chromium.
 
 ```bash
+# Desde cualquier instalación (.deb, .rpm o AppImage)
+msgeater --analyze correo.eml
+msgeater --analyze --json correo.eml otro.eml
+
 # Desde el repositorio
 npm run build
 npm run analyze -- correo.eml
-
-# Desde una instalación .deb/.rpm, sin DISPLAY: el binario de la app admite
-# ejecutarse como Node a secas, así que no arranca Chromium ni pide pantalla.
-ELECTRON_RUN_AS_NODE=1 msgeater /opt/MsgEater/resources/app/out/main/cli.js correo.eml
 ```
 
-> Todavía **no** se instala un lanzador corto (`msgeater-analyze`) junto al
-> paquete; hay que invocarlo con la ruta completa como arriba. Un alias
-> resuelve el día a día:
->
-> ```bash
-> alias msgeater-analyze='ELECTRON_RUN_AS_NODE=1 msgeater /opt/MsgEater/resources/app/out/main/cli.js'
-> ```
+Es el mismo binario de siempre: **no hay un ejecutable aparte que instalar**.
+Con `--analyze` no abre ventana ni necesita servidor gráfico, así que sirve por
+SSH, en un contenedor o desde un cron. Tampoco interfiere con una ventana ya
+abierta: la bandera se atiende antes del bloqueo de instancia única, de modo
+que el comando responde aunque estés usando la aplicación.
 
 | Opción | Efecto |
 | --- | --- |
 | `--json` | Salida en JSON: un array con el análisis de cada archivo |
 | `-h`, `--help` | Ayuda y códigos de salida |
 
-Para encadenar la salida con otra herramienta hay que usar `npm run --silent`
-(sin él, npm imprime su propia cabecera en `stdout` y el JSON deja de ser
-analizable) o llamar directamente a `node out/main/cli.js`.
+Desde el repositorio, para encadenar la salida con otra herramienta hay que
+usar `npm run --silent analyze` (sin `--silent`, npm imprime su propia cabecera
+en `stdout` y el JSON deja de ser analizable). Con `msgeater --analyze` no
+ocurre.
 
 Acepta varios archivos. Uno ilegible no aborta los demás: se informa por
 `stderr` y el resto se analiza igual.
@@ -91,12 +91,12 @@ Acepta varios archivos. Uno ilegible no aborta los demás: se informa por
 ```bash
 # Todos los .eml de un directorio que disparen alguna señal
 for f in *.eml; do
-  node out/main/cli.js "$f" >/dev/null || echo "revisar: $f"
+  msgeater --analyze "$f" >/dev/null || echo "revisar: $f"
 done
 
 # Los hashes de los adjuntos con macros, para consultarlos en un servicio de
 # reputación por hash, sin subir el archivo
-node out/main/cli.js --json *.msg |
+msgeater --analyze --json *.msg |
   jq -r '.[].attachments[] | select(.hasMacros) | "\(.sha256)  \(.fileName)"'
 ```
 

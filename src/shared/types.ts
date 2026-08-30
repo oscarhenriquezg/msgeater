@@ -28,6 +28,9 @@ export interface MsgAttachmentMeta {
   contentId?: string;
   /** Adjunto que es a su vez un mensaje .msg incrustado (OBJ-S2). */
   isEmbeddedMsg: boolean;
+  /** Documento ofimático con un proyecto VBA (macros). Sin analizar: solo se
+   *  busca la huella del proyecto en los bytes, nunca se ejecuta nada. */
+  hasMacros?: boolean;
 }
 
 export interface MsgMetadata {

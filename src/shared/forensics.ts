@@ -26,6 +26,7 @@ export type SignalKind =
   | 'from-mismatch'
   | 'replyto-mismatch'
   | 'executable-attachment'
+  | 'office-macro'
   | 'homograph'
   | 'shortened-url';
 
@@ -60,6 +61,7 @@ export interface AttachmentLike {
   fileName: string;
   extension: string;
   isInline: boolean;
+  hasMacros?: boolean;
 }
 
 export interface SignalInput {
@@ -125,6 +127,11 @@ export function buildSignals(input: SignalInput): Signal[] {
         severity: 'high',
         detail: att.fileName
       });
+    }
+    // Un documento ofimático con macros es una vía de entrega de malware
+    // habitual y no se distingue a simple vista de uno inofensivo.
+    if (att.hasMacros) {
+      signals.push({ kind: 'office-macro', severity: 'high', detail: att.fileName });
     }
   }
 

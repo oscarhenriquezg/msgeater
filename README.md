@@ -83,6 +83,7 @@ equipo.
 | **Anti-phishing** | La URL real de cada enlace se ve al pasar el cursor; el clic exige confirmar antes de salir al navegador, y si el enlace es engañoso la propia advertencia lo explica |
 | **Enlaces engañosos** | Resaltado opcional de los enlaces cuyo texto aparenta un dominio distinto al destino real (`<a>paypal.com</a>` → `evil.com`) |
 | **Unlink** | Un botón deja todos los enlaces inertes (tachados) para inspeccionar correos sospechosos sin riesgo |
+| **Macros ofimáticas** | Detecta si un `.docm`/`.xls`/… trae un proyecto VBA, sin abrirlo ni ejecutarlo |
 | **Adjuntos bajo control** | Solo se escriben a disco por acción explícita; los temporales de "Abrir" se purgan al salir |
 
 ### 🛠️ Acciones y exportación

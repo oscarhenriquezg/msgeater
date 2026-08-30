@@ -16,6 +16,7 @@ import type {
   MsgRecipient
 } from '@shared/types';
 import { MAX_RAW_HEADERS_BYTES } from '@shared/types';
+import { hasOfficeMacros, isOfficeAttachment } from '@shared/office-macros';
 import {
   MAX_ATTACHMENTS,
   MAX_BODY_BYTES,
@@ -294,6 +295,15 @@ export class MsgAdapter {
     };
   }
 
+  /** Huella de proyecto VBA en un adjunto ofimático; nunca lo ejecuta. */
+  private detectMacros(attachment: FieldsData, extension: string): boolean {
+    try {
+      return hasOfficeMacros(this.reader.getAttachment(attachment).content, extension);
+    } catch {
+      return false; // adjunto ilegible: no se afirma que tenga macros
+    }
+  }
+
   /** FR-07: HTML nativo → RTF → texto plano. */
   private resolveBody(): { html: string | null; source: BodySource } {
     const f = this.fields;
@@ -338,7 +348,11 @@ export class MsgAdapter {
         size: a.contentLength ?? 0,
         isInline: Boolean(a.attachmentHidden) || referenced,
         contentId,
-        isEmbeddedMsg: Boolean(a.innerMsgContent)
+        isEmbeddedMsg: Boolean(a.innerMsgContent),
+        // Solo se leen los bytes de los adjuntos ofimáticos (en un correo
+        // normal, ninguno) y el reader ya está abierto aquí, así que no
+        // supone un parseo extra del mensaje.
+        hasMacros: isOfficeAttachment(extension) ? this.detectMacros(a, extension) : undefined
       };
     });
   }

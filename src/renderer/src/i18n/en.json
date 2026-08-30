@@ -157,5 +157,6 @@
   "forensics.hashes": "Attachment SHA-256",
   "forensics.hashes.loading": "Computing…",
   "forensics.hashes.empty": "No attachments.",
-  "forensics.hashes.hint": "You can look these hashes up in a reputation service without uploading the file."
+  "forensics.hashes.hint": "You can look these hashes up in a reputation service without uploading the file.",
+  "forensics.sig.office-macro": "The attachment “{detail}” contains macros (VBA code), a common malware delivery route. Do not run them unless you are certain of the sender."
 }

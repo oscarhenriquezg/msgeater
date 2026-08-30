@@ -222,6 +222,11 @@ número de señales detectadas. Al pulsarlo se abre el detalle:
   dominio. Los subdominios de la misma organización no se marcan, porque los
   boletines y listas legítimos los usan de forma habitual.
 - **Adjuntos ejecutables**: archivos que pueden ejecutar código.
+- **Macros en documentos ofimáticos**: se busca la huella de un proyecto VBA
+  dentro del archivo (`vbaProject.bin` en los formatos ZIP modernos,
+  `_VBA_PROJECT`/`Macros` en los `.doc`/`.xls` antiguos) **sin abrirlo ni
+  ejecutar nada**. Se revisan también las extensiones que en teoría no llevan
+  macros (`.docx`, `.xlsx`): si las llevan, es más sospechoso, no menos.
 - **Enlaces**: dominios con homografía IDN (caracteres de otro alfabeto que
   imitan al latino) y acortadores de URL, cuyo destino real no es visible.
 - **Indicadores del mensaje**: URLs, dominios, IPs y direcciones extraídos y

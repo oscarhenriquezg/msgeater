@@ -222,11 +222,11 @@
     </p>
 
     <div class="tabs" role="tablist">
-      <button role="tab" data-shot="main" aria-selected="true"><span data-t="es">Ventana principal</span><span data-t="en">Main window</span></button>
-      <button role="tab" data-shot="analysis" aria-selected="false"><span data-t="es">Señales de riesgo</span><span data-t="en">Risk signals</span></button>
-      <button role="tab" data-shot="route" aria-selected="false"><span data-t="es">Ruta de entrega</span><span data-t="en">Delivery route</span></button>
-      <button role="tab" data-shot="phishing" aria-selected="false"><span data-t="es">Enlaces engañosos</span><span data-t="en">Misleading links</span></button>
-      <button role="tab" data-shot="source" aria-selected="false"><span data-t="es">Código fuente</span><span data-t="en">Message source</span></button>
+      <button role="tab" data-tab="main" aria-selected="true"><span data-t="es">Ventana principal</span><span data-t="en">Main window</span></button>
+      <button role="tab" data-tab="analysis" aria-selected="false"><span data-t="es">Señales de riesgo</span><span data-t="en">Risk signals</span></button>
+      <button role="tab" data-tab="route" aria-selected="false"><span data-t="es">Ruta de entrega</span><span data-t="en">Delivery route</span></button>
+      <button role="tab" data-tab="phishing" aria-selected="false"><span data-t="es">Enlaces engañosos</span><span data-t="en">Misleading links</span></button>
+      <button role="tab" data-tab="source" aria-selected="false"><span data-t="es">Código fuente</span><span data-t="en">Message source</span></button>
     </div>
 
     <div class="shotbox" id="shotbox" data-shot="main">
@@ -441,6 +441,13 @@ verify-your-account.eml
     source: { es: 'Vista de código fuente del mensaje', en: 'Message source view' }
   };
 
+  // Identificadores de captura, en el mismo orden que las pestañas del
+  // documento. La clave sale SIEMPRE de aquí y nunca de `dataset`: si el
+  // nombre del fichero se compusiera con texto leído del DOM, acabaría en
+  // `src` y en `href`, que son sumideros de verdad aunque aquí el prefijo
+  // `img/` lo hiciera inofensivo.
+  var SHOTS = ['main', 'analysis', 'route', 'phishing', 'source'];
+
   var root = document.documentElement;
   var shot = document.getElementById('shot');
   var shotbox = document.getElementById('shotbox');
@@ -476,21 +483,21 @@ verify-your-account.eml
     setLang(lang() === 'es' ? 'en' : 'es');
   });
 
-  function select(tab) {
-    tabs.forEach(function (t) { t.setAttribute('aria-selected', String(t === tab)); });
-    current = tab.dataset.shot;
+  function select(index) {
+    tabs.forEach(function (t, n) { t.setAttribute('aria-selected', String(n === index)); });
+    current = SHOTS[index];
     render();
   }
 
   tabs.forEach(function (tab, i) {
-    tab.addEventListener('click', function () { select(tab); });
+    tab.addEventListener('click', function () { select(i); });
     tab.addEventListener('keydown', function (e) {
       var d = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0;
       if (!d) return;
       e.preventDefault();
-      var next = tabs[(i + d + tabs.length) % tabs.length];
-      next.focus();
-      select(next);
+      var n = (i + d + tabs.length) % tabs.length;
+      tabs[n].focus();
+      select(n);
     });
   });
 

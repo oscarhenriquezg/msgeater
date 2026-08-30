@@ -14,6 +14,10 @@
 </p>
 
 <p align="center">
+  <a href="https://oscarhenriquezg.github.io/msgeater/"><b>oscarhenriquezg.github.io/msgeater</b></a>
+</p>
+
+<p align="center">
   <img src="assets/icon-source/png/MsgEater-256x256.png" alt="Icono de MsgEater" width="128" />
 </p>
 

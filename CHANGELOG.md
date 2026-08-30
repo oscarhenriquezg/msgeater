@@ -2,6 +2,52 @@
 
 Todos los cambios notables de este proyecto se documentan en este archivo.
 
+## [0.5.0] - 2026-08-30
+
+### Añadido
+
+- **Triaje de phishing.** Bajo los metadatos aparece un aviso —solo si hay
+  algo que reportar— con las señales de riesgo detectadas: autenticación del
+  remitente fallida (SPF/DKIM/DMARC), suplantación de dirección (`From` frente
+  a `Return-Path`, `Reply-To` desviado), adjuntos que pueden ejecutar código,
+  dominios con homografía IDN y enlaces acortados. Al pulsarlo se abre el
+  detalle con la explicación de cada señal.
+  - **Indicadores del mensaje**: URLs, dominios, IPs y direcciones extraídos y
+    deduplicados, copiables por grupo para reportar un phishing sin
+    recopilarlos a mano.
+  - **SHA-256 de los adjuntos**, calculados bajo demanda. Permiten consultar
+    un archivo en un servicio de reputación **buscando por hash, sin subirlo**:
+    el contenido del correo no sale del equipo.
+  - Si no se detecta ninguna señal **no se muestra nada**: no detectar nada no
+    equivale a que el correo sea seguro, así que la app no exhibe un indicador
+    "en verde" que induzca confianza injustificada.
+- Pruebas basadas en propiedades (`fast-check`) sobre las funciones que
+  procesan entrada no confiable.
+- Los releases incluyen la procedencia también como `.intoto.jsonl`, además
+  del bundle Sigstore.
+- Escaneo automático de los instalables publicados con VirusTotal (~70
+  motores) al publicar cada release.
+- `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`, `docs/USER-GUIDE.md` y traducciones
+  al inglés del README y la política de seguridad. El proyecto obtuvo el badge
+  *passing* de OpenSSF Best Practices.
+- La cobertura de tests se mide y se reporta en cada corrida de CI.
+
+### Corregido
+
+- `sameOrganization` comparaba solo las dos últimas etiquetas del dominio, de
+  modo que `bank.co.uk` y `attacker.co.uk` se trataban como la misma
+  organización y **se suprimían** las señales de suplantación en un caso de
+  phishing real.
+- La extracción de enlaces ignoraba los atributos HTML sin comillas
+  (`<a href=https://...>`), que siguen siendo clicables: esos enlaces evadían
+  tanto las señales como los indicadores.
+- Los adjuntos marcados `inline` quedaban fuera de la señal de ejecutable,
+  aunque un `.eml` puede etiquetar así un archivo que la interfaz sigue
+  ofreciendo para abrir y guardar.
+- El filtro interno de `<script>`/`<style>` no seguía la regla de cierre de
+  HTML (`</script >`, `</script/>`), lo que permitía colar contenido de un
+  script en el texto analizado.
+
 ## [0.4.4] - 2026-08-29
 
 ### Añadido

@@ -133,6 +133,13 @@
   .shotbox img { display: block; width: 100%; height: auto; }
   .caption { padding: 13px 16px; border-top: 1px solid var(--border); color: var(--text-dim); font-size: 0.9rem; }
   .caption strong { color: var(--text); }
+  /* Solo se ve el subtítulo de la pestaña activa. */
+  .caption [data-cap] { display: none; }
+  .shotbox[data-shot="main"] [data-cap="main"],
+  .shotbox[data-shot="analysis"] [data-cap="analysis"],
+  .shotbox[data-shot="route"] [data-cap="route"],
+  .shotbox[data-shot="phishing"] [data-cap="phishing"],
+  .shotbox[data-shot="source"] [data-cap="source"] { display: block; }
 
   /* --- Rejilla de características ---------------------------------------- */
   .grid { display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
@@ -222,11 +229,19 @@
       <button role="tab" data-shot="source" aria-selected="false"><span data-t="es">Código fuente</span><span data-t="en">Message source</span></button>
     </div>
 
-    <div class="shotbox">
+    <div class="shotbox" id="shotbox" data-shot="main">
       <a id="shotlink" href="img/main-es-light.png" target="_blank" rel="noopener">
         <img id="shot" src="img/main-es-light.png" alt="" />
       </a>
-      <div class="caption" id="cap"></div>
+      <!-- Los subtítulos van en el marcado, no generados desde JS: así no hay
+           ninguna cadena que acabe en innerHTML y además funcionan sin JS. -->
+      <div class="caption">
+        <div data-cap="main"><span data-t="es"><strong>Ventana principal.</strong> Metadatos, adjuntos y el cuerpo ya sanitizado, dentro de un iframe sin permiso para ejecutar scripts.</span><span data-t="en"><strong>Main window.</strong> Metadata, attachments and the already-sanitised body, inside an iframe with no permission to run scripts.</span></div>
+        <div data-cap="analysis"><span data-t="es"><strong>Señales de riesgo.</strong> Cada indicio se explica en una frase. No hay puntuación: un número inventado daría una falsa sensación de precisión.</span><span data-t="en"><strong>Risk signals.</strong> Each indicator is explained in one sentence. There is no score: a made-up number would give a false sense of precision.</span></div>
+        <div data-cap="route"><span data-t="es"><strong>Ruta de entrega.</strong> La cadena <code>Received</code> como línea de tiempo, avisando de que los primeros saltos los puede inventar quien envía.</span><span data-t="en"><strong>Delivery route.</strong> The <code>Received</code> chain as a timeline, warning that the sender can fabricate the earliest hops.</span></div>
+        <div data-cap="phishing"><span data-t="es"><strong>Enlaces engañosos.</strong> El texto dice un dominio y el destino es otro: queda marcado. Un botón deja además todos los enlaces inertes.</span><span data-t="en"><strong>Misleading links.</strong> The text claims one domain and the target is another: it gets flagged. A button also makes every link inert.</span></div>
+        <div data-cap="source"><span data-t="es"><strong>Código fuente.</strong> Cabeceras resaltadas, resultados SPF/DKIM/DMARC, propiedades MAPI crudas y el diff de lo que la sanitización eliminó.</span><span data-t="en"><strong>Message source.</strong> Highlighted headers, SPF/DKIM/DMARC results, raw MAPI properties and a diff of what sanitising removed.</span></div>
+      </div>
     </div>
   </section>
 
@@ -416,35 +431,19 @@ verify-your-account.eml
 
 <script>
 (function () {
-  var CAPTIONS = {
-    main: {
-      es: '<strong>Ventana principal.</strong> Metadatos, adjuntos y el cuerpo ya sanitizado, dentro de un iframe sin permiso para ejecutar scripts.',
-      en: '<strong>Main window.</strong> Metadata, attachments and the already-sanitised body, inside an iframe with no permission to run scripts.'
-    },
-    analysis: {
-      es: '<strong>Señales de riesgo.</strong> Cada indicio se explica en una frase. No hay puntuación: un número inventado daría una falsa sensación de precisión.',
-      en: '<strong>Risk signals.</strong> Each indicator is explained in one sentence. There is no score: a made-up number would give a false sense of precision.'
-    },
-    route: {
-      es: '<strong>Ruta de entrega.</strong> La cadena <code>Received</code> como línea de tiempo, avisando de que los primeros saltos los puede inventar quien envía.',
-      en: '<strong>Delivery route.</strong> The <code>Received</code> chain as a timeline, warning that the sender can fabricate the earliest hops.'
-    },
-    phishing: {
-      es: '<strong>Enlaces engañosos.</strong> El texto dice un dominio y el destino es otro: queda marcado. Un botón deja además todos los enlaces inertes.',
-      en: '<strong>Misleading links.</strong> The text claims one domain and the target is another: it gets flagged. A button also makes every link inert.'
-    },
-    source: {
-      es: '<strong>Código fuente.</strong> Cabeceras resaltadas, resultados SPF/DKIM/DMARC, propiedades MAPI crudas y el diff de lo que la sanitización eliminó.',
-      en: '<strong>Message source.</strong> Highlighted headers, SPF/DKIM/DMARC results, raw MAPI properties and a diff of what sanitising removed.'
-    }
-  };
+  // Texto alternativo de cada captura. Fijo en el código y no leído del DOM:
+  // así ninguna cadena viaja del documento a un atributo por el camino largo.
   var ALT = {
-    es: 'Captura de MsgEater: ', en: 'MsgEater screenshot: '
+    main: { es: 'Ventana principal de MsgEater', en: 'MsgEater main window' },
+    analysis: { es: 'Panel de análisis con las señales de riesgo', en: 'Analysis panel with the risk signals' },
+    route: { es: 'Ruta de entrega del mensaje', en: 'Delivery route of the message' },
+    phishing: { es: 'Enlaces engañosos resaltados', en: 'Misleading links highlighted' },
+    source: { es: 'Vista de código fuente del mensaje', en: 'Message source view' }
   };
 
   var root = document.documentElement;
   var shot = document.getElementById('shot');
-  var cap = document.getElementById('cap');
+  var shotbox = document.getElementById('shotbox');
   var langBtn = document.getElementById('lang');
   var tabs = Array.prototype.slice.call(document.querySelectorAll('[role="tab"]'));
   var current = 'main';
@@ -459,8 +458,8 @@ verify-your-account.eml
     var file = 'img/' + current + '-' + l + '-' + theme() + '.png';
     shot.src = file;
     document.getElementById('shotlink').href = file;
-    shot.alt = ALT[l] + document.querySelector('[data-shot="' + current + '"] [data-t="' + l + '"]').textContent;
-    cap.innerHTML = CAPTIONS[current][l];
+    shot.alt = ALT[current][l];
+    shotbox.setAttribute('data-shot', current);
     langBtn.textContent = l === 'es' ? 'EN' : 'ES';
     root.setAttribute('lang', l);
   }

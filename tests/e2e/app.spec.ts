@@ -526,3 +526,19 @@ test('triaje: no se muestra nada en un correo sin señales (NFR: no dar falso "s
   await expect(page.locator('#header')).toBeVisible();
   await expect(page.locator('#forensics')).toBeHidden();
 });
+
+test('triaje: el panel es accesible desde la barra aunque no haya señales', async () => {
+  await launch(join(FIXTURES, 'html-basic.msg'));
+  // Sin señales no hay alerta, pero el botón de análisis debe estar disponible:
+  // los indicadores y los hashes sirven igual en un correo normal.
+  await expect(page.locator('#forensics')).toBeHidden();
+  await page.click('#btn-analysis');
+  await expect(page.locator('#forensics-dialog')).toBeVisible();
+
+  // El texto no debe declarar el correo seguro, solo que no se detectó nada.
+  await expect(page.locator('#forensics-list')).toContainText(/no.*detect|none of the signals/i);
+
+  // Y los hashes de los adjuntos se calculan igualmente.
+  await page.click('#forensics-hashes-title');
+  await expect(page.locator('.hash-row').first()).toBeVisible();
+});

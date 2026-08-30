@@ -16,6 +16,7 @@ export type MenuAction =
   | { type: 'save-as' }
   | { type: 'zoom'; delta: number }
   | { type: 'source' }
+  | { type: 'analysis' }
   | { type: 'about' }
   | { type: 'associate' }
   | { type: 'copy-meta'; as: 'text' | 'json' };
@@ -64,6 +65,7 @@ const STRINGS = {
     zoomOut: 'Alejar',
     resetZoom: 'Tamaño real',
     source: 'Ver código fuente del mensaje',
+    analysis: 'Analizar el mensaje…',
     window: 'Ventana',
     minimize: 'Minimizar',
     maximize: 'Maximizar / Restaurar',
@@ -115,6 +117,7 @@ const STRINGS = {
     zoomOut: 'Zoom out',
     resetZoom: 'Actual size',
     source: 'View message source',
+    analysis: 'Analyse message…',
     window: 'Window',
     minimize: 'Minimize',
     maximize: 'Maximize / Restore',
@@ -318,6 +321,13 @@ export function installMenu(opts: MenuOptions): void {
         },
         { type: 'separator' },
         {
+          id: 'view-analysis',
+          label: s.analysis,
+          accelerator: 'CmdOrCtrl+Shift+A',
+          enabled: false,
+          click: () => sendToFocused({ type: 'analysis' })
+        },
+        {
           id: 'view-source',
           label: s.source,
           accelerator: 'CmdOrCtrl+U',
@@ -416,7 +426,8 @@ export function setExportEnabled(enabled: boolean): void {
     'copy-meta',
     'copy-meta-json',
     'save-as',
-    'view-source'
+    'view-source',
+    'view-analysis'
   ]) {
     const item = menu?.getMenuItemById(id);
     if (item) item.enabled = enabled;

@@ -138,7 +138,7 @@
   "unlink.cancel": "Cancelar",
   "forensics.summary": "{n} señal de riesgo detectada",
   "forensics.summaryPlural": "{n} señales de riesgo detectadas",
-  "forensics.title": "Señales de riesgo",
+  "forensics.title": "Análisis del mensaje",
   "forensics.disclaimer": "Estas señales son indicios, no un veredicto. Que no aparezcan más no significa que el correo sea seguro.",
   "forensics.close": "Cerrar",
   "forensics.sig.auth-fail": "La autenticación del remitente falló ({detail}): el servidor de origen no está autorizado a enviar por ese dominio.",
@@ -158,5 +158,8 @@
   "forensics.hashes.loading": "Calculando…",
   "forensics.hashes.empty": "Sin adjuntos.",
   "forensics.hashes.hint": "Puedes buscar estos hashes en un servicio de reputación sin subir el archivo.",
-  "forensics.sig.office-macro": "El adjunto «{detail}» contiene macros (código VBA), una vía habitual de entrega de malware. No las ejecutes salvo que sepas con certeza de quién viene."
+  "forensics.sig.office-macro": "El adjunto «{detail}» contiene macros (código VBA), una vía habitual de entrega de malware. No las ejecutes salvo que sepas con certeza de quién viene.",
+  "actions.analysis": "Analizar el mensaje (señales, indicadores y hashes)",
+  "forensics.noSignals": "No se detectó ninguna de las señales que la aplicación comprueba. Eso no significa que el correo sea seguro: un mensaje malicioso bien construido puede no dispararlas.",
+  "menu.analysis": "Analizar el mensaje…"
 }

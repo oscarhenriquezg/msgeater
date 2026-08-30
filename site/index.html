@@ -62,7 +62,10 @@
     backdrop-filter: blur(10px);
     border-bottom: 1px solid var(--border);
   }
-  .top .wrap { display: flex; align-items: center; gap: 14px; height: 60px; }
+  /* `min-height` y no `height`: con altura fija, al envolver el menú en
+     pantallas estrechas las filas se centraban fuera de la cabecera y la
+     primera quedaba por encima del borde superior de la ventana. */
+  .top .wrap { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 14px; min-height: 60px; padding-top: 8px; padding-bottom: 8px; }
   .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; letter-spacing: -0.01em; text-decoration: none; }
   .brand img { width: 30px; height: 30px; border-radius: 7px; }
   .top nav { margin-left: auto; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
@@ -75,6 +78,10 @@
   .langbtn { border-color: var(--border); font-weight: 600; }
 
   /* --- Hero -------------------------------------------------------------- */
+  @media (max-width: 560px) {
+    .top nav a[href^="#"] { display: none; }
+  }
+
   .hero { padding: 64px 0 34px; text-align: center; }
   .hero img.logo { width: 104px; height: 104px; border-radius: 24px; }
   .hero h1 { font-size: clamp(2.1rem, 5vw, 3.1rem); margin: 20px 0 6px; letter-spacing: -0.03em; }
@@ -448,6 +455,19 @@ verify-your-account.eml
   // `img/` lo hiciera inofensivo.
   var SHOTS = ['main', 'analysis', 'route', 'phishing', 'source'];
 
+  // La pestaña del navegador y la descripción también son contenido: dejarlas
+  // en español con la página en inglés se contradice.
+  var META = {
+    es: {
+      title: 'MsgEater — visor de correos .msg, 100% offline',
+      description: 'Visor de escritorio para .msg, .eml y .emlx en Linux y macOS. Abre correos sospechosos sin ejecutar su contenido y sin que salgan de tu equipo.'
+    },
+    en: {
+      title: 'MsgEater — .msg email viewer, 100% offline',
+      description: 'Desktop viewer for .msg, .eml and .emlx on Linux and macOS. Open suspicious email without running its content and without it leaving your machine.'
+    }
+  };
+
   var root = document.documentElement;
   var shot = document.getElementById('shot');
   var shotbox = document.getElementById('shotbox');
@@ -475,6 +495,8 @@ verify-your-account.eml
     shotbox.setAttribute('data-shot', current);
     langBtn.textContent = l === 'es' ? 'EN' : 'ES';
     root.setAttribute('lang', l);
+    document.title = META[l].title;
+    document.querySelector('meta[name="description"]').setAttribute('content', META[l].description);
   }
 
   function setLang(value) {

@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto';
 import { simpleParser, type AddressObject, type ParsedMail } from 'mailparser';
 import type { LoadResult, MsgDocument, MsgRecipient } from '@shared/types';
 import { MAX_RAW_HEADERS_BYTES } from '@shared/types';
+import { hasOfficeMacros } from '@shared/office-macros';
 import { isUsableSmtp } from './address';
 import { MAX_ATTACHMENTS, MAX_BODY_BYTES, MAX_INLINE_IMAGE_BYTES, MAX_TOTAL_INLINE_BYTES } from './limits';
 import { plainTextToHtml } from './rtf';
@@ -75,6 +76,8 @@ export async function parseEml(buffer: Buffer, sourcePath: string): Promise<Load
       size: a.content.length,
       isInline: Boolean(a.cid && html.includes('data:')) || a.contentDisposition === 'inline',
       contentId: a.cid,
+      // simpleParser ya tiene el contenido en memoria: no cuesta un parseo extra.
+      hasMacros: hasOfficeMacros(a.content, extension) || undefined,
       isEmbeddedMsg:
         extension === '.msg' ||
         extension === '.eml' ||

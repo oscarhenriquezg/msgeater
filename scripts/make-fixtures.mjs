@@ -159,6 +159,50 @@ writeFileSync(join(outDir, 'path-traversal.msg'), buildMsg({
   ]
 }));
 
+// --- Adjuntos ofimáticos con y sin macros (detección sin ejecutar nada) ----
+
+/** OOXML mínimo pero real: un ZIP cuyas entradas se listan en claro. */
+function buildOoxml(entryNames) {
+  // Se usa CFB.write en modo zip para no añadir una dependencia solo por esto.
+  const cfb = CFB.utils.cfb_new();
+  for (const name of entryNames) {
+    CFB.utils.cfb_add(cfb, name, Buffer.from('x'));
+  }
+  return Buffer.from(CFB.write(cfb, { type: 'buffer', fileType: 'zip' }));
+}
+
+/** Documento OLE antiguo: los nombres de stream van en UTF-16LE en el CFBF. */
+function buildOleDoc(streamNames) {
+  const cfb = CFB.utils.cfb_new();
+  for (const name of streamNames) {
+    CFB.utils.cfb_add(cfb, name, Buffer.from('x'));
+  }
+  return Buffer.from(CFB.write(cfb, { type: 'buffer' }));
+}
+
+writeFileSync(join(outDir, 'office-macros.msg'), buildMsg({
+  subject: 'Factura adjunta',
+  senderName: 'Proveedor',
+  senderEmail: 'facturacion@proveedor.example',
+  bodyText: 'Adjuntamos la factura del mes.',
+  attachments: [
+    // .docm con proyecto VBA → debe marcarse
+    { fileName: 'factura.docm', extension: '.docm',
+      content: buildOoxml(['word/document.xml', 'word/vbaProject.bin']) },
+    // .xls antiguo con macros → debe marcarse
+    { fileName: 'balance.xls', extension: '.xls',
+      content: buildOleDoc(['Workbook', '_VBA_PROJECT']) },
+    // .docx equivalente SIN macros → no debe marcarse (control del falso positivo)
+    { fileName: 'anexo.docx', extension: '.docx',
+      content: buildOoxml(['word/document.xml', 'word/styles.xml']) },
+    // Extensión declarada mentirosa: PidTagAttachExtension dice ".txt" pero el
+    // nombre visible es .docm. La propiedad MAPI la controla quien envía, así
+    // que la detección no puede fiarse solo de ella.
+    { fileName: 'nomina.docm', extension: '.txt',
+      content: buildOoxml(['word/document.xml', 'word/vbaProject.bin']) }
+  ]
+}));
+
 writeFileSync(join(outDir, 'ansi-cyrillic.msg'), buildAnsiMsg({
   subject: 'Привет, отчёт',
   bodyText: 'Текст письма в кодировке Windows-1251.',

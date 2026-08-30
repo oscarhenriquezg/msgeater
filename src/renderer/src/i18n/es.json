@@ -157,5 +157,6 @@
   "forensics.hashes": "SHA-256 de los adjuntos",
   "forensics.hashes.loading": "Calculando…",
   "forensics.hashes.empty": "Sin adjuntos.",
-  "forensics.hashes.hint": "Puedes buscar estos hashes en un servicio de reputación sin subir el archivo."
+  "forensics.hashes.hint": "Puedes buscar estos hashes en un servicio de reputación sin subir el archivo.",
+  "forensics.sig.office-macro": "El adjunto «{detail}» contiene macros (código VBA), una vía habitual de entrega de malware. No las ejecutes salvo que sepas con certeza de quién viene."
 }

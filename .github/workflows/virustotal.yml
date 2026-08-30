@@ -21,6 +21,9 @@ jobs:
   scan:
     runs-on: ubuntu-latest
     timeout-minutes: 60
+    permissions:
+      contents: write # empujar la rama con el README actualizado
+      pull-requests: write # proponerlo como PR (main está protegida)
     env:
       GH_TOKEN: ${{ github.token }}
       REPO: ${{ github.repository }}
@@ -92,12 +95,102 @@ jobs:
             suspicious=$(echo "$stats_json" | jq -r '.suspicious')
             total=$(echo "$stats_json" | jq -r '[.[]] | add')
             echo "| ${name} | \`${sha}\` | ${malicious} malicious / ${suspicious} suspicious de ${total} motores | [ver informe](https://www.virustotal.com/gui/file/${sha}) |" >> "$summary"
+
+            # Para el resumen del README se elige UN artefacto: el peor. Sus
+            # tres cifras y su hash viajan juntos, porque mezclarlos entre
+            # archivos produciría una fila que anuncia un recuento que no
+            # corresponde al informe enlazado. El AppImage sirve de referencia
+            # inicial (es el descargable genérico de Linux) y solo lo desbanca
+            # otro artefacto si tiene más detecciones.
+            score=$(( malicious * 1000 + suspicious ))
+            if [ -z "${WORST_SHA:-}" ] || [ "$score" -gt "${WORST_SCORE:-0}" ] \
+               || { [ "$score" -eq "${WORST_SCORE:-0}" ] && [ "${name##*.}" = "AppImage" ] \
+                    && [ "${WORST_IS_APPIMAGE:-0}" = "0" ]; }; then
+              WORST_SCORE=$score
+              WORST_MALICIOUS=$malicious
+              WORST_SUSPICIOUS=$suspicious
+              WORST_ENGINES=$total
+              WORST_SHA=$sha
+              WORST_NAME=$name
+              [ "${name##*.}" = "AppImage" ] && WORST_IS_APPIMAGE=1 || WORST_IS_APPIMAGE=0
+            fi
           done
 
           cat "$summary" >> "$GITHUB_STEP_SUMMARY"
+
+          {
+            echo "worst_malicious=${WORST_MALICIOUS:-0}"
+            echo "worst_suspicious=${WORST_SUSPICIOUS:-0}"
+            echo "engines=${WORST_ENGINES:-0}"
+            echo "link_sha=${WORST_SHA:-}"
+            echo "worst_name=${WORST_NAME:-}"
+            echo "version=${TAG#v}"
+          } >> "$GITHUB_OUTPUT"
+        id: scan
 
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: virustotal-report
           path: virustotal-*.md
           retention-days: 90
+
+      # El README muestra el resultado concreto (no un enlace genérico) para
+      # dar confianza inmediata a quien evalúa si probar la app, así que hay
+      # que refrescarlo en cada release. Se propone por PR, nunca con push
+      # directo: main está protegida y este cambio también debe pasar por los
+      # checks.
+      - name: Proponer la actualización del README
+        if: steps.scan.outputs.link_sha != ''
+        env:
+          V: ${{ steps.scan.outputs.version }}
+          MAL: ${{ steps.scan.outputs.worst_malicious }}
+          SUS: ${{ steps.scan.outputs.worst_suspicious }}
+          ENGINES: ${{ steps.scan.outputs.engines }}
+          LINK_SHA: ${{ steps.scan.outputs.link_sha }}
+        run: |
+          gh repo clone "$REPO" repo -- --depth 1
+          cd repo
+          python3 - <<'PY'
+          import os, re
+          v, mal, sus = os.environ['V'], os.environ['MAL'], os.environ['SUS']
+          engines, sha = os.environ['ENGINES'], os.environ['LINK_SHA']
+          url = f'https://www.virustotal.com/gui/file/{sha}'
+          # Se reescribe solo la fila de VirusTotal de la tabla Security & Trust,
+          # conservando el enlace final a la guía de verificación.
+          patterns = [
+            ('README.md',
+             r'\| \*\*Escaneo VirusTotal\*\* \| .*? — \[ver informe\]\([^)]*\)',
+             f'| **Escaneo VirusTotal** | **{mal} malicious / {sus} suspicious** de {engines} motores en v{v} (última versión escaneada) — [ver informe]({url})'),
+            ('README.en.md',
+             r'\| \*\*VirusTotal scan\*\* \| .*? — \[see report\]\([^)]*\)',
+             f'| **VirusTotal scan** | **{mal} malicious / {sus} suspicious** out of {engines} engines on v{v} (latest scanned version) — [see report]({url})'),
+          ]
+          for path, pat, repl in patterns:
+              s = open(path, encoding='utf-8').read()
+              s2 = re.sub(pat, repl.replace('\\', '\\\\'), s, count=1)
+              if s2 == s:
+                  raise SystemExit(f'::error::no se encontró la fila de VirusTotal en {path}')
+              open(path, 'w', encoding='utf-8').write(s2)
+          print('READMEs actualizados')
+          PY
+
+          if git diff --quiet; then
+            echo "El README ya estaba al día; no hace falta PR."
+            exit 0
+          fi
+
+          branch="bot/virustotal-v${V}"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git checkout -b "$branch"
+          git commit -aqm "docs: actualizar el resultado de VirusTotal a v${V}
+
+          ${MAL} malicious / ${SUS} suspicious de ${ENGINES} motores (peor
+          resultado entre los cinco instalables). Generado por el workflow de
+          VirusTotal tras publicar el release."
+          git push -q origin "$branch"
+          gh pr create --base main --head "$branch" \
+            --title "docs: actualizar el resultado de VirusTotal a v${V}" \
+            --body "Automático tras el escaneo de \`v${V}\`: **${MAL} malicious / ${SUS} suspicious** de ${ENGINES} motores (peor resultado de los cinco instalables).
+
+          > **Nota:** los PR abiertos con \`GITHUB_TOKEN\` no disparan workflows, así que este llega sin checks y la protección de rama lo bloqueará. Para desbloquearlo: ciérralo y vuelve a abrirlo (o haz \`git commit --amend --no-edit && git push -f\` sobre la rama). Se puede evitar usando un PAT en lugar del token por defecto."

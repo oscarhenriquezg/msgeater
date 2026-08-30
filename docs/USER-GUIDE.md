@@ -49,9 +49,13 @@ funciona por SSH, en un contenedor o desde un cron. Por dentro reutiliza el
 propio binario de la aplicación en modo Node, sin arrancar Chromium.
 
 ```bash
-# Desde cualquier instalación (.deb, .rpm o AppImage)
+# Instalación .deb / .rpm
 msgeater --analyze correo.eml
 msgeater --analyze --json correo.eml otro.eml
+
+# AppImage: el instalador NO crea ningún comando `msgeater`, se invoca el
+# propio archivo (queda en ~/.local/bin/MsgEater.AppImage)
+MsgEater.AppImage --analyze correo.eml
 
 # Desde el repositorio
 npm run build
@@ -90,6 +94,7 @@ Acepta varios archivos. Uno ilegible no aborta los demás: se informa por
 
 ```bash
 # Todos los .eml de un directorio que disparen alguna señal
+# (con AppImage, sustituye `msgeater` por `MsgEater.AppImage`)
 for f in *.eml; do
   msgeater --analyze "$f" >/dev/null || echo "revisar: $f"
 done

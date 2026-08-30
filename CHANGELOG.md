@@ -2,6 +2,26 @@
 
 Todos los cambios notables de este proyecto se documentan en este archivo.
 
+## [0.6.0] - 2026-08-30
+
+### Añadido
+
+- **Detección de macros en adjuntos ofimáticos.** Si un `.docm`, `.xls`,
+  `.docx`… trae un proyecto VBA, se añade una señal de riesgo: los documentos
+  con macros son una vía de entrega de malware habitual y no se distinguen a
+  simple vista de uno inofensivo.
+  - Se comprueba **sin abrir ni ejecutar el documento**, buscando la huella
+    del proyecto (`vbaProject.bin` en los formatos ZIP modernos; una entrada
+    de directorio `_VBA_PROJECT`/`Macros` en los `.doc`/`.xls` antiguos).
+  - Se revisan también las extensiones que en teoría no llevan macros
+    (`.docx`, `.xlsx`): si las llevan, es más sospechoso, no menos.
+  - No afecta al tiempo de apertura: solo se leen los bytes de los adjuntos
+    ofimáticos, que en un correo normal son ninguno.
+- El escaneo de VirusTotal posterior a cada release propone ahora por pull
+  request la actualización del resultado publicado en el README, en lugar de
+  dejarlo desfasado hasta que se corrija a mano. Se conserva el resultado del
+  peor de los cinco instalables, no el más favorable.
+
 ## [0.5.0] - 2026-08-30
 
 ### Añadido

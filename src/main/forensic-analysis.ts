@@ -33,9 +33,13 @@ function bodyToText(bodyHtml: string): string {
   const withoutCode = bodyHtml
     .replace(/<script\b[^>]*>[\s\S]*?<\/script(?=[\s/>])[^>]*>/gi, ' ')
     .replace(/<style\b[^>]*>[\s\S]*?<\/style(?=[\s/>])[^>]*>/gi, ' ');
-  const attrUrls = [...withoutCode.matchAll(/\b(?:href|src)\s*=\s*["']([^"']+)["']/gi)].map(
-    (m) => m[1]!
-  );
+  // HTML admite el valor entre comillas dobles, simples o SIN comillas
+  // (`<a href=https://bit.ly/x>`). Esa última forma sigue siendo un enlace
+  // clicable en el visor, así que omitirla dejaría pasar acortadores y
+  // homografías sin marcar y sin aparecer en los indicadores.
+  const attrUrls = [
+    ...withoutCode.matchAll(/\b(?:href|src)\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'<>`]+))/gi)
+  ].map((m) => m[1] ?? m[2] ?? m[3] ?? '');
   return `${withoutCode.replace(/<[^>]+>/g, ' ')}\n${attrUrls.join('\n')}`;
 }
 

@@ -7,6 +7,7 @@ import {
   domainOf,
   extractIocs,
   parseAddressHeaders,
+  registrableDomain,
   sameOrganization
 } from '../../src/main/headers-analysis';
 import { buildSignals, type SignalInput } from '../../src/shared/forensics';
@@ -49,6 +50,30 @@ describe('sameOrganization', () => {
 
   it('distingue organizaciones diferentes', () => {
     expect(sameOrganization('empresa.com', 'evil.example')).toBe(false);
+  });
+
+  // Con sufijos públicos de dos niveles, quedarse con las dos últimas
+  // etiquetas reduciría bank.co.uk y attacker.co.uk a "co.uk" y trataría un
+  // caso de suplantación real como si fuera la misma organización.
+  it('no confunde dominios distintos bajo un sufijo público de dos niveles', () => {
+    expect(sameOrganization('bank.co.uk', 'attacker.co.uk')).toBe(false);
+    expect(sameOrganization('empresa.com.au', 'atacante.com.au')).toBe(false);
+    expect(sameOrganization('banco.com.br', 'malo.com.br')).toBe(false);
+  });
+
+  it('sigue reconociendo subdominios propios bajo esos sufijos', () => {
+    expect(sameOrganization('mail.bank.co.uk', 'bank.co.uk')).toBe(true);
+    expect(sameOrganization('bounces.empresa.com.au', 'empresa.com.au')).toBe(true);
+  });
+});
+
+describe('registrableDomain', () => {
+  it('resuelve el dominio que de verdad se registró', () => {
+    expect(registrableDomain('empresa.com')).toBe('empresa.com');
+    expect(registrableDomain('mail.empresa.com')).toBe('empresa.com');
+    expect(registrableDomain('bank.co.uk')).toBe('bank.co.uk');
+    expect(registrableDomain('mail.bank.co.uk')).toBe('bank.co.uk');
+    expect(registrableDomain('localhost')).toBe('localhost');
   });
 });
 
@@ -128,7 +153,7 @@ describe('buildSignals', () => {
     expect(signals.map((s) => s.kind)).toContain('replyto-mismatch');
   });
 
-  it('marca adjuntos ejecutables, ignorando los inline', () => {
+  it('marca adjuntos ejecutables', () => {
     const signals = buildSignals(
       input({
         attachments: [
@@ -143,6 +168,17 @@ describe('buildSignals', () => {
       severity: 'high',
       detail: 'factura.pdf.exe'
     });
+  });
+
+  // "inline" lo decide quien envía: un .eml puede etiquetar así un ejecutable,
+  // y la interfaz lo sigue ofreciendo para abrir/guardar.
+  it('marca un ejecutable aunque venga marcado como inline', () => {
+    const signals = buildSignals(
+      input({
+        attachments: [{ fileName: 'malware.exe', extension: '.exe', isInline: true }]
+      })
+    );
+    expect(signals.map((s) => s.kind)).toContain('executable-attachment');
   });
 
   it('marca homografías IDN y acortadores de URL', () => {
@@ -256,6 +292,24 @@ describe('computeSignals sobre fixtures reales', () => {
     ]) {
       expect(iocs.domains).not.toContain(oculto);
     }
+  });
+
+  // HTML permite atributos sin comillas: el enlace sigue siendo clicable en el
+  // visor, así que perderlo dejaría pasar acortadores y homografías.
+  it('captura enlaces con el atributo sin comillas', async () => {
+    const doc = {
+      metadata: {},
+      bodyHtml: "<a href=https://bit.ly/sincomillas>pulsa</a> <a href='https://simples.example/a'>y</a>",
+      attachments: [],
+      rawHeaders: ''
+    } as unknown as Parameters<typeof documentIocs>[0];
+
+    const iocs = documentIocs(doc);
+    expect(iocs.domains).toContain('bit.ly');
+    expect(iocs.domains).toContain('simples.example');
+
+    // Y debe llegar hasta la señal, no solo a los indicadores.
+    expect(computeSignals(doc).map((s) => s.kind)).toContain('shortened-url');
   });
 
   it('extrae los indicadores del correo suplantado', async () => {

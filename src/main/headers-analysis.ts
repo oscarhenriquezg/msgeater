@@ -105,15 +105,56 @@ export function parseAddressHeaders(headers: string): AddressHeaders {
 }
 
 /**
+ * Sufijos públicos de dos niveles bajo los que cualquiera puede registrar.
+ *
+ * Sin esta lista, quedarse con las dos últimas etiquetas hace que
+ * `bank.co.uk` y `attacker.co.uk` se reduzcan ambos a `co.uk` y se traten como
+ * la misma organización — es decir, se SUPRIMIRÍA la señal justo en un caso de
+ * suplantación real. Con la lista, el dominio registrable de `bank.co.uk` es
+ * el propio `bank.co.uk`.
+ *
+ * No es la Public Suffix List completa (son miles de entradas y exigiría una
+ * dependencia nueva); cubre los sufijos de uso masivo. Ante un sufijo no
+ * listado el resultado es el comportamiento anterior, que puede generar un
+ * falso negativo: por eso, si alguna vez hay que ampliar, el criterio es
+ * añadir sufijos, nunca quitar.
+ */
+const MULTI_LABEL_SUFFIXES = new Set([
+  'co.uk', 'org.uk', 'ac.uk', 'gov.uk', 'me.uk', 'net.uk', 'sch.uk',
+  'com.au', 'net.au', 'org.au', 'edu.au', 'gov.au', 'id.au',
+  'co.nz', 'net.nz', 'org.nz', 'govt.nz', 'ac.nz',
+  'com.br', 'net.br', 'org.br', 'gov.br', 'edu.br',
+  'com.ar', 'com.mx', 'com.co', 'com.pe', 'com.uy', 'com.ve', 'com.ec',
+  'co.jp', 'ne.jp', 'or.jp', 'ac.jp', 'go.jp',
+  'co.kr', 'or.kr', 'go.kr',
+  'com.cn', 'net.cn', 'org.cn', 'gov.cn', 'edu.cn',
+  'co.in', 'net.in', 'org.in', 'gov.in', 'ac.in',
+  'co.za', 'org.za', 'gov.za',
+  'com.tr', 'com.sg', 'com.hk', 'com.tw', 'com.my', 'com.ph', 'com.vn',
+  'com.es', 'com.pl', 'com.ua', 'co.il', 'com.sa', 'com.eg', 'com.ng'
+]);
+
+/**
+ * Dominio registrable: la etiqueta que alguien registra, más su sufijo. Para
+ * `mail.empresa.com` es `empresa.com`; para `mail.bank.co.uk`, `bank.co.uk`.
+ */
+export function registrableDomain(domain: string): string {
+  const labels = domain.toLowerCase().split('.').filter(Boolean);
+  if (labels.length <= 2) return labels.join('.');
+  const lastTwo = labels.slice(-2).join('.');
+  // Sufijo de dos niveles → hace falta una etiqueta más para llegar al
+  // dominio que de verdad se registró.
+  return MULTI_LABEL_SUFFIXES.has(lastTwo) ? labels.slice(-3).join('.') : lastTwo;
+}
+
+/**
  * ¿Dos dominios pertenecen a la misma organización? Comparación deliberadamente
- * laxa por el dominio registrable aproximado (últimas dos etiquetas): así
- * `mail.empresa.com` y `empresa.com` no se marcan como discrepancia, que sería
- * ruido en correo corporativo perfectamente normal.
+ * laxa por el dominio registrable: así `mail.empresa.com` y `empresa.com` no se
+ * marcan como discrepancia, que sería ruido en correo corporativo normal.
  */
 export function sameOrganization(a: string, b: string): boolean {
   if (a === b) return true;
-  const reg = (d: string) => d.split('.').slice(-2).join('.');
-  return reg(a) === reg(b);
+  return registrableDomain(a) === registrableDomain(b);
 }
 
 const URL_RE = /\bhttps?:\/\/[^\s<>"')\]]+/gi;

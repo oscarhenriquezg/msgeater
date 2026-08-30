@@ -111,9 +111,15 @@ export function buildSignals(input: SignalInput): Signal[] {
     signals.push({ kind: 'replyto-mismatch', severity: 'medium', detail: `${from} → ${replyTo}` });
   }
 
-  // 3. Adjuntos que pueden ejecutar código (los inline son imágenes del cuerpo).
+  // 3. Adjuntos que pueden ejecutar código.
+  //
+  // Se miran TAMBIÉN los marcados como inline: `Content-Disposition: inline`
+  // lo elige quien envía, no garantiza que sea una imagen del cuerpo, y un
+  // .eml puede etiquetar así un `malware.exe`. Como la interfaz de adjuntos
+  // los sigue ofreciendo para abrir y guardar, saltárselos escondería la
+  // señal de un archivo que el usuario puede ejecutar igualmente.
   for (const att of input.attachments) {
-    if (!att.isInline && isExecutableAttachment(att.extension)) {
+    if (isExecutableAttachment(att.extension)) {
       signals.push({
         kind: 'executable-attachment',
         severity: 'high',

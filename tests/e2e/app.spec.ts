@@ -612,7 +612,19 @@ test('modo consola: analiza con la ventana abierta y sin perder salida', async (
 
   const result = spawnSync(
     electronPath,
-    ['.', '--analyze', '--json', join(FIXTURES, 'spoofed.eml'), join(FIXTURES, 'office-macros.msg')],
+    [
+      // `--no-sandbox` es una necesidad del binario de node_modules en CI, donde
+      // `chrome-sandbox` no queda con root:4755 y Electron aborta con SIGTRAP
+      // antes de ejecutar nada. Los paquetes .deb/.rpm/AppImage sí lo instalan
+      // bien, así que no es algo que tenga que hacer quien usa la aplicación.
+      // Va ANTES de la bandera: al analizador solo le llega lo que la sigue.
+      '.',
+      '--no-sandbox',
+      '--analyze',
+      '--json',
+      join(FIXTURES, 'spoofed.eml'),
+      join(FIXTURES, 'office-macros.msg')
+    ],
     // Con timeout a propósito: si la bandera dejara de atenderse, esto abriría
     // una ventana que no termina nunca y el test colgaría CI en vez de fallar.
     { cwd: ROOT, encoding: 'utf-8', env: { ...process.env }, timeout: 60_000 }

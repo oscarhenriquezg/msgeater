@@ -342,6 +342,42 @@ const EML_DN = [
 ].join('\r\n');
 writeFileSync(join(outDir, 'eml-exchange-dn.eml'), EML_DN);
 
+// Correo con varias señales de riesgo simultáneas (triaje de phishing):
+// SPF/DMARC en fail, Return-Path de otro dominio, Reply-To desviado, enlace
+// acortado y homografía IDN (аррӏе.com en cirílico).
+const EML_SPOOFED = [
+  'From: "Soporte Banco" <avisos@banco-seguro.example>',
+  'Return-Path: <rebote@evil.example>',
+  'Reply-To: "Soporte" <respuestas@atacante.example>',
+  'To: victima@empresa.example',
+  'Subject: Verifica tu cuenta',
+  'Date: Mon, 10 Jun 2024 12:00:00 +0000',
+  'Authentication-Results: mx.empresa.example; spf=fail smtp.mailfrom=evil.example; dmarc=fail',
+  'Received: from evil.example (203.0.113.45) by mx.empresa.example; Mon, 10 Jun 2024 12:00:00 +0000',
+  'MIME-Version: 1.0',
+  'Content-Type: text/html; charset=utf-8',
+  '',
+  '<p>Entra en <a href="https://bit.ly/verificar">tu cuenta</a> o en',
+  '<a href="https://xn--80ak6aa92e.com/login">apple.com</a>.</p>'
+].join('\r\n');
+writeFileSync(join(outDir, 'spoofed.eml'), EML_SPOOFED);
+
+// Contraparte legítima: Return-Path en un subdominio propio (lo que hace
+// cualquier lista de correo o proveedor de envío) NO debe marcarse.
+const EML_LEGIT_BOUNCE = [
+  'From: "Boletin" <news@empresa.example>',
+  'Return-Path: <bounce-123@bounces.empresa.example>',
+  'To: suscriptor@otra.example',
+  'Subject: Boletin mensual',
+  'Date: Mon, 10 Jun 2024 12:00:00 +0000',
+  'Authentication-Results: mx.otra.example; spf=pass; dkim=pass; dmarc=pass',
+  'MIME-Version: 1.0',
+  'Content-Type: text/plain; charset=utf-8',
+  '',
+  'Novedades del mes.'
+].join('\r\n');
+writeFileSync(join(outDir, 'legit-bounce.eml'), EML_LEGIT_BOUNCE);
+
 // EMLX (Apple Mail): nº de bytes + RFC822 + plist de metadatos.
 const emlxMsg = Buffer.from(EML_SAMPLE, 'utf-8');
 const emlxPlist =

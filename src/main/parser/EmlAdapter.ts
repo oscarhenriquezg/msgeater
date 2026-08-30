@@ -1,5 +1,7 @@
+import { createHash } from 'node:crypto';
 import { simpleParser, type AddressObject, type ParsedMail } from 'mailparser';
 import type { LoadResult, MsgDocument, MsgRecipient } from '@shared/types';
+import { MAX_RAW_HEADERS_BYTES } from '@shared/types';
 import { isUsableSmtp } from './address';
 import { MAX_ATTACHMENTS, MAX_BODY_BYTES, MAX_INLINE_IMAGE_BYTES, MAX_TOTAL_INLINE_BYTES } from './limits';
 import { plainTextToHtml } from './rtf';
@@ -104,9 +106,35 @@ export async function parseEml(buffer: Buffer, sourcePath: string): Promise<Load
     bodyHtml: html,
     bodySource: source,
     attachments,
-    sourcePath
+    sourcePath,
+    // mailparser conserva las líneas de cabecera originales; se reconstruyen
+    // tal cual para poder analizarlas igual que en el caso .msg.
+    rawHeaders: mail.headerLines
+      ?.map((h) => h.line)
+      .join('\r\n')
+      .slice(0, MAX_RAW_HEADERS_BYTES)
   };
   return { ok: true, document };
+}
+
+/**
+ * SHA-256 de cada adjunto de un .eml, en UN SOLO parseo.
+ *
+ * `simpleParser` ya materializa todos los adjuntos en memoria, así que
+ * llamarlo una vez por adjunto (como haría `getEmlAttachment` en bucle) es
+ * especialmente caro: se hace una pasada y se itera.
+ */
+export async function getEmlAttachmentHashes(
+  buffer: Buffer
+): Promise<{ id: number; sha256: string }[]> {
+  try {
+    const mail = await simpleParser(buffer);
+    return (mail.attachments ?? [])
+      .slice(0, MAX_ATTACHMENTS)
+      .map((a, id) => ({ id, sha256: createHash('sha256').update(a.content).digest('hex') }));
+  } catch {
+    return [];
+  }
 }
 
 /** Bytes de un adjunto de un .eml, bajo demanda (FR-10). */

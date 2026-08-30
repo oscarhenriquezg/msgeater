@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import MsgReaderModule, { type FieldsData, type ParserConfig } from '@kenjiuno/msgreader';
 
 // Interop CJS↔ESM: en Node ESM el default import de un paquete CJS es
@@ -14,6 +15,7 @@ import type {
   MsgDocument,
   MsgRecipient
 } from '@shared/types';
+import { MAX_RAW_HEADERS_BYTES } from '@shared/types';
 import {
   MAX_ATTACHMENTS,
   MAX_BODY_BYTES,
@@ -169,6 +171,31 @@ export class MsgAdapter {
   }
 
   /**
+   * SHA-256 de cada adjunto, en UN SOLO parseo del .msg.
+   *
+   * `getAttachmentContent` re-lee el archivo entero en cada llamada, así que
+   * usarlo en bucle costaría N parseos completos; aquí se abre una vez y se
+   * itera, igual que hace `getEmlParts`.
+   */
+  static getAttachmentHashes(buffer: Buffer): { id: number; sha256: string }[] {
+    try {
+      const { reader, fields } = readMsg(buffer);
+      const out: { id: number; sha256: string }[] = [];
+      (fields.attachments ?? []).slice(0, MAX_ATTACHMENTS).forEach((a, id) => {
+        try {
+          const { content } = reader.getAttachment(a);
+          out.push({ id, sha256: createHash('sha256').update(content).digest('hex') });
+        } catch {
+          // Adjunto ilegible: se omite del listado, sin abortar el resto.
+        }
+      });
+      return out;
+    } catch {
+      return [];
+    }
+  }
+
+  /**
    * Partes crudas para la reconstrucción EML (FR-12, L-02): cuerpo sin
    * sanitizar (el EML conserva el HTML original) y bytes de adjuntos.
    */
@@ -240,7 +267,8 @@ export class MsgAdapter {
       bodyHtml: withInline,
       bodySource: source,
       attachments,
-      sourcePath
+      sourcePath,
+      rawHeaders: this.fields.headers?.slice(0, MAX_RAW_HEADERS_BYTES)
     };
   }
 

@@ -2,6 +2,7 @@ import { join } from 'node:path';
 import { Worker } from 'node:worker_threads';
 import type { LoadResult } from '@shared/types';
 import type { ParseJob, ParseReply } from './parser/worker';
+import { computeSignals } from './forensic-analysis';
 
 /**
  * Puente al worker de parsing (NFR-01): un único worker reutilizado;
@@ -54,12 +55,23 @@ export function warmupParser(): void {
   getWorker();
 }
 
+/**
+ * Adjunta las señales de riesgo al documento recién parseado. Se hace aquí, en
+ * el único punto por el que pasan TODOS los flujos de apertura (archivo, bytes
+ * y mensajes anidados), para que ninguno pueda olvidarse de analizarlas.
+ */
+async function withSignals(job: Promise<LoadResult>): Promise<LoadResult> {
+  const result = await job;
+  if (result.ok) result.document.signals = computeSignals(result.document);
+  return result;
+}
+
 export function parseFile(filePath: string): Promise<LoadResult> {
-  return submit({ filePath });
+  return withSignals(submit({ filePath }));
 }
 
 export function parseBytes(bytes: Uint8Array, virtualPath: string): Promise<LoadResult> {
-  return submit({ bytes, virtualPath });
+  return withSignals(submit({ bytes, virtualPath }));
 }
 
 export function shutdownParser(): void {

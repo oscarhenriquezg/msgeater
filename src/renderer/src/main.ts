@@ -20,6 +20,14 @@ const el = {
   metaTable: $<HTMLTableElement>('meta-table'),
   attachments: $('attachments'),
   attachmentRow: $('attachment-row'),
+  forensics: $('forensics'),
+  btnForensics: $('btn-forensics'),
+  forensicsIcon: $('forensics-icon'),
+  forensicsText: $('forensics-text'),
+  forensicsDialog: $<HTMLDialogElement>('forensics-dialog'),
+  forensicsList: $('forensics-list'),
+  forensicsIocs: $('forensics-iocs'),
+  forensicsHashes: $('forensics-hashes'),
   emptyState: $('empty-state'),
   errorState: $('error-state'),
   errorTitle: $('error-title'),
@@ -146,7 +154,128 @@ function showDocument(doc: MsgDocument): void {
   el.signatureBadge.textContent = t('header.signature');
   renderMetaTable(doc);
   renderAttachments(doc.attachments);
+  renderForensics(doc);
   renderBody(doc.bodyHtml);
+}
+
+// ---------------------------------------------------------------------------
+// Triaje de phishing (señales de riesgo)
+// ---------------------------------------------------------------------------
+
+/**
+ * Aviso compacto con las señales detectadas. Si no hay ninguna, la sección se
+ * oculta por completo: NO se muestra un "sin señales / todo correcto", porque
+ * no haber detectado nada no equivale a que el correo sea seguro.
+ */
+function renderForensics(doc: MsgDocument): void {
+  const signals = doc.signals ?? [];
+  el.forensics.hidden = signals.length === 0;
+  if (signals.length === 0) return;
+
+  const worst = signals.some((s) => s.severity === 'high') ? 'high' : 'medium';
+  el.forensics.dataset.severity = worst;
+  el.forensicsIcon.innerHTML = worst === 'high' ? ICONS.shieldAlert : ICONS.shield;
+  el.forensicsText.textContent =
+    signals.length === 1
+      ? t('forensics.summary', { n: signals.length })
+      : t('forensics.summaryPlural', { n: signals.length });
+}
+
+/** Lista legible de señales dentro del diálogo. */
+function renderSignalList(signals: MsgDocument['signals'] = []): void {
+  el.forensicsList.replaceChildren(
+    ...signals.map((s) => {
+      const li = document.createElement('li');
+      li.className = `signal signal-${s.severity}`;
+      li.textContent = t(`forensics.sig.${s.kind}`, { detail: s.detail });
+      return li;
+    })
+  );
+}
+
+/** Un grupo de indicadores con su botón de copiar. */
+function iocGroup(titleKey: string, values: string[]): HTMLElement | null {
+  if (values.length === 0) return null;
+  const box = document.createElement('div');
+  box.className = 'ioc-group';
+
+  const head = document.createElement('div');
+  head.className = 'ioc-head';
+  const title = document.createElement('strong');
+  title.textContent = `${t(titleKey)} (${values.length})`;
+  const copy = document.createElement('button');
+  copy.className = 'btn small';
+  copy.textContent = t('forensics.copyGroup');
+  copy.addEventListener('click', () => {
+    api.copyText(values.join('\n'));
+    toast(t('toast.copied', { what: t(titleKey) }));
+  });
+  head.append(title, copy);
+
+  const list = document.createElement('pre');
+  list.className = 'ioc-values';
+  list.textContent = values.join('\n');
+  box.append(head, list);
+  return box;
+}
+
+/** Carga IOCs y hashes (ambos bajo demanda) y abre el diálogo. */
+async function openForensicsDialog(): Promise<void> {
+  const doc = currentDoc;
+  if (!doc) return;
+  renderSignalList(doc.signals);
+
+  el.forensicsHashes.textContent = t('forensics.hashes.loading');
+  el.forensicsIocs.replaceChildren();
+  el.forensicsDialog.showModal();
+
+  const [iocs, hashes] = await Promise.all([api.messageIocs(), api.attachmentHashes()]);
+
+  const groups = [
+    iocGroup('forensics.iocs.urls', iocs.urls),
+    iocGroup('forensics.iocs.domains', iocs.domains),
+    iocGroup('forensics.iocs.ips', iocs.ips),
+    iocGroup('forensics.iocs.emails', iocs.emails)
+  ].filter((g): g is HTMLElement => g !== null);
+  if (groups.length === 0) {
+    const empty = document.createElement('p');
+    empty.className = 'muted';
+    empty.textContent = t('forensics.iocs.empty');
+    el.forensicsIocs.replaceChildren(empty);
+  } else {
+    el.forensicsIocs.replaceChildren(...groups);
+  }
+
+  // El id del hash se corresponde con el índice del adjunto en el documento.
+  const byId = new Map(hashes.map((h) => [h.id, h.sha256]));
+  const rows = doc.attachments
+    .filter((a) => byId.has(a.id))
+    .map((a) => {
+      const row = document.createElement('div');
+      row.className = 'hash-row';
+      const name = document.createElement('span');
+      name.className = 'hash-name';
+      name.textContent = a.fileName;
+      const value = document.createElement('code');
+      value.className = 'hash-value copyable';
+      value.textContent = byId.get(a.id)!;
+      value.title = t('meta.clickToCopy');
+      value.addEventListener('click', () => {
+        api.copyText(byId.get(a.id)!);
+        toast(t('toast.copied', { what: a.fileName }));
+      });
+      row.append(name, value);
+      return row;
+    });
+
+  if (rows.length === 0) {
+    el.forensicsHashes.textContent = t('forensics.hashes.empty');
+  } else {
+    const hint = document.createElement('p');
+    hint.className = 'muted';
+    hint.textContent = t('forensics.hashes.hint');
+    el.forensicsHashes.replaceChildren(...rows, hint);
+  }
 }
 
 function metaRow(label: string, value: HTMLElement | string): HTMLTableRowElement {
@@ -1085,6 +1214,12 @@ async function init(): Promise<void> {
   $('btn-linkwarn-cancel').textContent = t('unlink.cancel');
   $('about-icon').innerHTML = `<img src="${iconAbout}" alt="" />`;
   $('btn-about-close').textContent = t('about.close');
+  $('forensics-dialog-icon').innerHTML = ICONS.shieldAlert;
+  $('forensics-title').textContent = t('forensics.title');
+  $('forensics-disclaimer').textContent = t('forensics.disclaimer');
+  $('forensics-iocs-title').textContent = t('forensics.iocs');
+  $('forensics-hashes-title').textContent = t('forensics.hashes');
+  $('btn-forensics-close').textContent = t('forensics.close');
   $('associate-icon').innerHTML = ICONS.open;
   $('associate-title').textContent = t('associate.title');
   $('btn-associate-cancel').textContent = t('associate.cancel');
@@ -1195,6 +1330,8 @@ async function init(): Promise<void> {
   $('btn-source').addEventListener('click', () => api.viewSource());
   $('btn-about').addEventListener('click', () => openAboutDialog());
   $('btn-about-close').addEventListener('click', () => el.aboutDialog.close());
+  el.btnForensics.addEventListener('click', () => void openForensicsDialog());
+  $('btn-forensics-close').addEventListener('click', () => el.forensicsDialog.close());
   $('about-repo').addEventListener('click', (e) => {
     e.preventDefault();
     if (appInfo.repoUrl) api.openExternal(appInfo.repoUrl);

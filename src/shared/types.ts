@@ -4,6 +4,10 @@
  * metadatos; la escritura a disco ocurre en main bajo demanda.
  */
 
+import type { Signal } from './forensics';
+
+export type { Signal };
+
 export type BodySource = 'html' | 'rtf-deencapsulated' | 'rtf-converted' | 'plaintext';
 
 export interface MsgRecipient {
@@ -46,7 +50,17 @@ export interface MsgDocument {
   attachments: MsgAttachmentMeta[];
   /** Ruta del archivo origen (para título de ventana y exportaciones). */
   sourcePath: string;
+  /**
+   * Cabeceras de transporte crudas, para el análisis de señales de riesgo.
+   * Truncadas a MAX_RAW_HEADERS_BYTES; ausentes si el origen no las trae.
+   */
+  rawHeaders?: string;
+  /** Señales de riesgo detectadas (vacío = no se detectó nada, NO "es seguro"). */
+  signals?: Signal[];
 }
+
+/** Tope de cabeceras que se conservan para análisis (unos KB es lo normal). */
+export const MAX_RAW_HEADERS_BYTES = 256 * 1024;
 
 export type LoadErrorCode =
   | 'not-found'
@@ -176,4 +190,20 @@ export interface MsgEaterApi {
    * ventana de .msg anidado). Pull en init: inmune a carreras de arranque.
    */
   getCurrentDocument(): Promise<MsgDocument | null>;
+  /**
+   * SHA-256 de cada adjunto, bajo demanda (el cálculo re-parsea el mensaje,
+   * así que no se hace al abrir para no penalizar el arranque). Solo cruzan
+   * hashes en hexadecimal, nunca los bytes del adjunto.
+   */
+  attachmentHashes(): Promise<{ id: number; sha256: string }[]>;
+  /** Indicadores (URLs, dominios, IPs, direcciones) del mensaje actual. */
+  messageIocs(): Promise<Iocs>;
+}
+
+/** Indicadores de compromiso extraídos del mensaje. */
+export interface Iocs {
+  urls: string[];
+  domains: string[];
+  ips: string[];
+  emails: string[];
 }

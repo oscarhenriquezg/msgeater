@@ -22,20 +22,49 @@ function unfold(headers: string): string {
 
 /** Octeto 0-255: evita confundir un número de versión con una IP. */
 const OCTET = '(?:25[0-5]|2[0-4]\\d|1\\d\\d|[1-9]?\\d)';
-const IPV4 = new RegExp(`\\b(${OCTET}(?:\\.${OCTET}){3})\\b`);
-/** Literal IPv6 tal como lo escribe un MTA: `[IPv6:2001:db8::1]` o `[2001:db8::1]`. */
-const IPV6_LITERAL = /\[(IPv6:)?([0-9a-f]{0,4}(?::[0-9a-f]{0,4}){2,7})\]/i;
+const IPV4_BODY = `${OCTET}(?:\\.${OCTET}){3}`;
+/**
+ * IPv4 como token COMPLETO. `\b` no sirve: también hay frontera de palabra
+ * antes de un punto, así que en `mail-1.2.3.4.5.example` extraería `1.2.3.4`
+ * —una dirección inventada— y además, al ser la primera coincidencia, ganaría
+ * a la IP real que venga después. El nombre de ese host lo elige quien envía,
+ * de modo que sería una IP falsa a voluntad del atacante en un panel cuyo
+ * propósito es que alguien la copie para reportarla o bloquearla.
+ */
+const IPV4_TOKEN = new RegExp(`(?<![\\w.-])(${IPV4_BODY})(?![\\w.-])`);
+const IPV4_EMBEDDED = new RegExp(`(?:^|:)(${IPV4_BODY})$`);
+/** Candidato entre corchetes; la validación real la hace `isIpv6`. */
+const IPV6_CANDIDATE = /\[(?:IPv6:)?([0-9a-f:.]+)\]/i;
 
-function ipv6Literal(text: string): string | undefined {
-  const match = text.match(IPV6_LITERAL);
-  if (!match) return undefined;
-  const [, prefixed, value] = match;
-  if (prefixed) return value; // `IPv6:` no deja lugar a duda
-  // Sin ese prefijo el patrón también acepta una hora entre corchetes
-  // (`[13:40:30]`). Un literal IPv6 de verdad lleva compresión `::` o los
-  // ocho grupos completos, y una hora no tiene ninguna de las dos cosas.
-  if (!value!.includes('::') && value!.split(':').length < 8) return undefined;
-  return value;
+/**
+ * ¿Es `value` una dirección IPv6 válida? Hace falta comprobarlo de verdad: un
+ * patrón laxo acepta `1::2::3` o la hora `13:40:30` (y el prefijo `IPv6:` no
+ * añade validez, solo lo declara quien escribe la cabecera), y a la vez
+ * rechaza formas legítimas con IPv4 embebida como `::ffff:192.0.2.1`.
+ */
+function isIpv6(value: string): boolean {
+  let text = value;
+  let expected = 8;
+
+  // Cola IPv4 embebida (`::ffff:192.0.2.1`): ocupa los dos últimos grupos.
+  const embedded = text.match(IPV4_EMBEDDED);
+  if (embedded) {
+    text = text.slice(0, text.length - embedded[1]!.length);
+    if (!text.endsWith(':')) return false;
+    text = text.slice(0, -1);
+    expected = 6;
+  }
+
+  const sides = text.split('::');
+  if (sides.length > 2) return false; // la compresión solo puede aparecer una vez
+
+  const groupsOf = (side: string) => (side === '' ? [] : side.split(':'));
+  const head = groupsOf(sides[0]!);
+  const tail = sides.length === 2 ? groupsOf(sides[1]!) : [];
+  if (![...head, ...tail].every((g) => /^[0-9a-f]{1,4}$/i.test(g))) return false;
+
+  // Sin `::` han de estar los ocho grupos; con `::` sustituye al menos a uno.
+  return sides.length === 2 ? head.length + tail.length < expected : head.length === expected;
 }
 
 /**
@@ -46,7 +75,9 @@ function ipv6Literal(text: string): string | undefined {
 function hopIp(receivedValue: string): string | undefined {
   const by = receivedValue.search(/\bby\s/i);
   const fromClause = by > 0 ? receivedValue.slice(0, by) : receivedValue;
-  return ipv6Literal(fromClause) ?? fromClause.match(IPV4)?.[1];
+  const candidate = fromClause.match(IPV6_CANDIDATE)?.[1];
+  if (candidate && isIpv6(candidate)) return candidate;
+  return fromClause.match(IPV4_TOKEN)?.[1];
 }
 
 /**

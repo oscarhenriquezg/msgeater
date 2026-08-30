@@ -62,6 +62,44 @@ describe('parseReceivedChain', () => {
   // `[13:40:30]` encaja con la forma de un IPv6 abreviado pero es una hora.
   it('no confunde una hora entre corchetes con un IPv6', () => {
     expect(ipOf('from mail.example.com [13:40:30] by mx.example.com;')).toBeUndefined();
+    // Y el prefijo `IPv6:` no la convierte en dirección: lo escribe la misma
+    // cabecera que se está analizando, así que no aporta ninguna garantía.
+    expect(ipOf('from mail.example.com [IPv6:13:40:30] by mx.example.com;')).toBeUndefined();
+  });
+
+  it('acepta las formas válidas de IPv6, incluida la IPv4 embebida', () => {
+    expect(ipOf('from x ([IPv6:::ffff:192.0.2.1]) by mx;')).toBe('::ffff:192.0.2.1');
+    expect(ipOf('from x ([1:2:3:4:5:6:192.0.2.1]) by mx;')).toBe('1:2:3:4:5:6:192.0.2.1');
+    expect(ipOf('from x ([2001:db8::1]) by mx;')).toBe('2001:db8::1');
+    expect(ipOf('from x ([::1]) by mx;')).toBe('::1');
+    expect(ipOf('from x ([2001:db8:0:0:0:0:0:1]) by mx;')).toBe('2001:db8:0:0:0:0:0:1');
+  });
+
+  // Cada caso ataca una regla distinta del validador. Los tres primeros se
+  // eligieron por mutación: con entradas más obvias (`1::2::3`, `zzzz`) la
+  // regla correspondiente no llegaba a ejercitarse —otra la rechazaba antes—
+  // y podía borrarse sin que ningún test se enterara.
+  it('rechaza un IPv6 mal formado', () => {
+    // Doble compresión que el mero recuento de grupos no descarta.
+    expect(ipOf('from x ([1:2:3:4:5:6:7:8::a::b]) by mx;')).toBeUndefined();
+    // Grupo de cinco dígitos y punto dentro de un grupo: ambos pasan el filtro
+    // de caracteres del candidato, solo los caza la validación por grupo.
+    expect(ipOf('from x ([2001:db8:12345::1]) by mx;')).toBeUndefined();
+    expect(ipOf('from x ([2001:db.8::1]) by mx;')).toBeUndefined();
+    // `::` ha de sustituir al menos a un grupo: con los ocho ya presentes, sobra.
+    expect(ipOf('from x ([1:2:3:4:5:6:7:8::]) by mx;')).toBeUndefined();
+    expect(ipOf('from x ([1:2:3:4:5:6:7:8:9]) by mx;')).toBeUndefined(); // nueve grupos
+    expect(ipOf('from x ([1::2::3]) by mx;')).toBeUndefined();
+  });
+
+  // Un nombre de host lo elige quien envía. Si un fragmento suyo pasa por IP,
+  // el panel publica una dirección inventada —y para colmo tapa la real, por
+  // ser la primera coincidencia— que alguien podría reportar o bloquear.
+  it('no extrae una IP de un fragmento del nombre del host', () => {
+    expect(ipOf('from mail-1.2.3.4.5.example by mx.example.com;')).toBeUndefined();
+    expect(ipOf('from mail-1.2.3.4.5.example ([203.0.113.5]) by mx.example.com;')).toBe(
+      '203.0.113.5'
+    );
   });
 
   const hopOf = (received: string) => parseReceivedChain(`Received: ${received}`)[0];

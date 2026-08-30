@@ -17,9 +17,12 @@ import type { Iocs } from './headers-analysis';
  * `<...>` se lleva por delante justo las URLs que se quieren analizar, que es
  * el dato más relevante para detectar phishing.
  *
- * Las etiquetas de cierre admiten espacios (`</script >`, `</script\n>`), así
- * que el patrón los contempla: HTML lo permite y un correo hostil puede usarlo
- * para que el contenido de un `<script>` se cuele en el texto analizado.
+ * El cierre de estos elementos NO es solo `</script>`: HTML lo da por
+ * terminado en cuanto ve `</script` seguido de espacio, `/` o `>`, de modo que
+ * `</script >`, `</script/>` y hasta `</script\t\n basura>` cierran igual. Un
+ * correo hostil puede usar esas formas para que el contenido del script se
+ * cuele en el texto analizado, así que el patrón sigue esa regla (lookahead)
+ * en vez de exigir el cierre exacto.
  *
  * Limitación asumida: esto es extracción de texto con expresiones regulares,
  * no un parser de HTML, y alimenta ÚNICAMENTE el análisis de indicadores. Lo
@@ -28,8 +31,8 @@ import type { Iocs } from './headers-analysis';
  */
 function bodyToText(bodyHtml: string): string {
   const withoutCode = bodyHtml
-    .replace(/<script\b[^>]*>[\s\S]*?<\/script\s*>/gi, ' ')
-    .replace(/<style\b[^>]*>[\s\S]*?<\/style\s*>/gi, ' ');
+    .replace(/<script\b[^>]*>[\s\S]*?<\/script(?=[\s/>])[^>]*>/gi, ' ')
+    .replace(/<style\b[^>]*>[\s\S]*?<\/style(?=[\s/>])[^>]*>/gi, ' ');
   const attrUrls = [...withoutCode.matchAll(/\b(?:href|src)\s*=\s*["']([^"']+)["']/gi)].map(
     (m) => m[1]!
   );

@@ -227,10 +227,15 @@ describe('computeSignals sobre fixtures reales', () => {
   // CodeQL (js/bad-tag-filter) detectó que el patrón original solo cubría
   // "</script>" exacto: HTML admite espacios antes del ">", así que un correo
   // podía colar el contenido de un script en el texto analizado.
-  it('descarta scripts y estilos aunque la etiqueta de cierre lleve espacios', async () => {
+  it('descarta scripts y estilos con cualquier forma válida de cierre', async () => {
+    // HTML cierra en cuanto ve "</script" + espacio, "/" o ">": todas estas
+    // formas son equivalentes para un navegador y deben tratarse igual.
     const html = [
       '<p>Visita <a href="https://legitimo.example/a">aquí</a></p>',
-      '<script>var c = "https://desde-script.example/x";</script >',
+      '<script>var a = "https://cierre-simple.example";</script>',
+      '<script>var b = "https://cierre-espacio.example";</script >',
+      '<script>var c = "https://cierre-basura.example";</script\t\n bar>',
+      '<script>var d = "https://cierre-barra.example";</script/>',
       '<style>body { background: url("https://desde-style.example/y"); }</style\n>'
     ].join('');
     const doc = {
@@ -241,9 +246,16 @@ describe('computeSignals sobre fixtures reales', () => {
     } as unknown as Parameters<typeof documentIocs>[0];
 
     const iocs = documentIocs(doc);
-    expect(iocs.domains).toContain('legitimo.example');
-    expect(iocs.domains).not.toContain('desde-script.example');
-    expect(iocs.domains).not.toContain('desde-style.example');
+    expect(iocs.domains).toContain('legitimo.example'); // el enlace real sí
+    for (const oculto of [
+      'cierre-simple.example',
+      'cierre-espacio.example',
+      'cierre-basura.example',
+      'cierre-barra.example',
+      'desde-style.example'
+    ]) {
+      expect(iocs.domains).not.toContain(oculto);
+    }
   });
 
   it('extrae los indicadores del correo suplantado', async () => {

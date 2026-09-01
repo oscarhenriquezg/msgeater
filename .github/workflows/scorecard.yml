@@ -31,6 +31,11 @@ jobs:
           results_file: results.sarif
           results_format: sarif
           publish_results: true
+          # El GITHUB_TOKEN por defecto no puede leer las reglas de branch
+          # protection "classic", así que el check Branch-Protection daba
+          # error. Este PAT de solo lectura (Administration: read) le da
+          # visibilidad. Caduca cada año; regenerarlo en el secret.
+          repo_token: ${{ secrets.SCORECARD_TOKEN }}
 
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
